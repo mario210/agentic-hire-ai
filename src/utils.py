@@ -12,15 +12,15 @@ def get_api_key(key: str):
     return SecretStr(raw_api_key) if raw_api_key else None
 
 
-
 class JobOfferList(BaseModel):
     """A collection of job offers extracted from search results."""
+
     offers: List[JobOffer]
 
 
 class JobParser:
     """
-    Specialized parser that takes raw search snippets and 
+    Specialized parser that takes raw search snippets and
     converts them into structured JobOffer objects.
     """
 
@@ -50,10 +50,12 @@ class JobParser:
 
         try:
             # The result is automatically an instance of JobOfferList (Pydantic)
-            result = self.structured_llm.invoke([
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": human_prompt}
-            ])
+            result = self.structured_llm.invoke(
+                [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": human_prompt},
+                ]
+            )
             return result.offers
         except Exception as e:
             print(f"❌ Error during job parsing: {e}")

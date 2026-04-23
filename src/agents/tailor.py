@@ -24,11 +24,15 @@ class TailorAgent:
             return {"status": "Tailor skipped: No jobs to process."}
 
         applications = {}
-        
-        logger.debug(f"Tailoring applications for {len(shortlisted_jobs)} shortlisted jobs.")
+
+        logger.debug(
+            f"Tailoring applications for {len(shortlisted_jobs)} shortlisted jobs."
+        )
 
         for job in shortlisted_jobs:
-            logger.info(f"Generating application materials for: {job.title} at {job.company}...")
+            logger.info(
+                f"Generating application materials for: {job.title} at {job.company}..."
+            )
 
             prompt = f"""
             You are a highly critical and skeptical Career Advisor. 
@@ -53,10 +57,14 @@ class TailorAgent:
 
             # Generate the content
             logger.debug("Requesting LLM to generate tailor analysis...")
-            response = self.llm.invoke([
-                SystemMessage(content="You are a highly critical and skeptical Career Advisor."),
-                HumanMessage(content=prompt)
-            ])
+            response = self.llm.invoke(
+                [
+                    SystemMessage(
+                        content="You are a highly critical and skeptical Career Advisor."
+                    ),
+                    HumanMessage(content=prompt),
+                ]
+            )
 
             # Extract portal from URL
             portal = "Unknown Portal"
@@ -72,12 +80,14 @@ class TailorAgent:
             applications[job.id] = {
                 "founded_job_offer": founded_job_offer,
                 "job_title": job.title,
-                "company": job.company
+                "company": job.company,
             }
             logger.debug(f"Tailored application generated for {job.id}")
 
-        logger.info(f"Tailor finished. Generated {len(applications)} personalized applications.")
+        logger.info(
+            f"Tailor finished. Generated {len(applications)} personalized applications."
+        )
         return {
             "applications": applications,
-            "status": f"Tailor generated {len(applications)} personalized applications."
+            "status": f"Tailor generated {len(applications)} personalized applications.",
         }

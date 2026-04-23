@@ -3,6 +3,7 @@ from langchain_core.tools import tool
 
 ORIO_SEARCH_INSTANCE_URL = "http://localhost:8000/search"
 
+
 @tool
 def job_search_tool(query: str) -> str:
     """
@@ -10,10 +11,7 @@ def job_search_tool(query: str) -> str:
     Input should be a specific search query like 'Senior Python Developer jobs London'.
     Returns a string containing a list of search results with titles, snippets, and URLs.
     """
-    payload = {
-        "query": query,
-        "num_results": 10
-    }
+    payload = {"query": query, "num_results": 10}
 
     try:
         response = requests.post(ORIO_SEARCH_INSTANCE_URL, json=payload, timeout=10)

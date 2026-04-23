@@ -3,8 +3,10 @@ from src.tools.vectordb import CVVectorManager
 from pydantic import BaseModel, Field
 from loguru import logger
 
+
 class MatchRating(BaseModel):
     """Structured output for the matching logic."""
+
     score: float = Field(description="Match score between 0.0 and 1.0")
     reasoning: str = Field(description="Brief explanation of why this score was given")
 
@@ -41,7 +43,7 @@ class OrchestratorAgent:
             # We search for the job title and description in our vectors
             search_query = f"{job.title} {job.description[:200]}"
             relevant_cv_parts = self.vector_manager.get_context(search_query, k=3)
-            
+
             logger.debug(f"RAG retrieved context length: {len(relevant_cv_parts)}")
 
             # 2. Evaluation Step: Compare Job vs. CV Evidence
@@ -76,15 +78,17 @@ class OrchestratorAgent:
                 logger.info(f"✅ Match accepted! Score: {rating.score}")
                 logger.debug(f"Reasoning: {rating.reasoning}")
             else:
-                logger.info(f"❌ Match rejected. Score ({rating.score}) below threshold (0.7).")
+                logger.info(
+                    f"❌ Match rejected. Score ({rating.score}) below threshold (0.7)."
+                )
                 logger.debug(f"Reasoning: {rating.reasoning}")
 
         # Sorting shortlisted jobs by score (descending)
         shortlisted_jobs.sort(key=lambda x: x.match_score, reverse=True)
-        
+
         logger.info(f"Orchestrator finished. Shortlisted {len(shortlisted_jobs)} jobs.")
 
         return {
             "shortlisted_jobs": shortlisted_jobs,
-            "status": f"Orchestrator shortlisted {len(shortlisted_jobs)} jobs."
+            "status": f"Orchestrator shortlisted {len(shortlisted_jobs)} jobs.",
         }

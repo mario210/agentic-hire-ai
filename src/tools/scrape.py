@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from langchain_core.tools import tool
 
+
 @tool
 def scrape_webpage_tool(url: str) -> str:
     """
@@ -16,14 +17,14 @@ def scrape_webpage_tool(url: str) -> str:
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
-        
+
         # Remove scripts and styles
         for script in soup(["script", "style"]):
             script.extract()
-            
+
         # Extract readable text
         text = soup.get_text(separator="\n", strip=True)
-        
+
         # Return a truncated version to avoid exceeding token limits
         return text[:10000]
     except Exception as e:

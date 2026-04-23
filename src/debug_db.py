@@ -8,34 +8,26 @@ load_dotenv()
 
 DB_PATH = "../../data/chroma_db"
 
+
 def inspect_db():
     common_params = {
         "base_url": "https://openrouter.ai/api/v1",
         "api_key": utils.get_api_key("OPENROUTER_API_KEY"),
     }
 
-    vision_model = ChatOpenAI(
-        model=VISION_MODEL_NAME,
-        temperature=0,
-        **common_params
-    )
+    vision_model = ChatOpenAI(model=VISION_MODEL_NAME, temperature=0, **common_params)
 
-    embeddings = OpenAIEmbeddings(
-        model=EMBEDDED_MODEL_NAME,
-        **common_params
-    )
+    embeddings = OpenAIEmbeddings(model=EMBEDDED_MODEL_NAME, **common_params)
 
     manager = CVVectorManager(
-        vision_model=vision_model,
-        embeddings=embeddings,
-        db_path=DB_PATH
+        vision_model=vision_model, embeddings=embeddings, db_path=DB_PATH
     )
 
     # 1. Get all raw data
     raw_data = manager._init_vectorstore().get()
-    ids = raw_data['ids']
-    documents = raw_data['documents']
-    metadatas = raw_data['metadatas']
+    ids = raw_data["ids"]
+    documents = raw_data["documents"]
+    metadatas = raw_data["metadatas"]
 
     print(f"--- DATABASE INSPECTION ---")
     print(f"Total chunks in DB: {len(ids)}")

@@ -16,6 +16,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 
+
 class CVVectorManager:
     """
     Manages the lifecycle of CV data within the Vector Database.
@@ -23,9 +24,13 @@ class CVVectorManager:
     bypassing corrupted PDF structures.
     """
 
-    def __init__(self, vision_model, embeddings, 
-                 db_path: str = "data/chroma_db", 
-                 collection_name: str = "cv_collection"):
+    def __init__(
+        self,
+        vision_model,
+        embeddings,
+        db_path: str = "data/chroma_db",
+        collection_name: str = "cv_collection",
+    ):
         self.db_path = db_path
         self.collection_name = collection_name
         self.vision_model = vision_model
@@ -37,7 +42,7 @@ class CVVectorManager:
         return Chroma(
             collection_name=self.collection_name,
             embedding_function=self.embeddings,
-            persist_directory=self.db_path
+            persist_directory=self.db_path,
         )
 
     @staticmethod
@@ -63,7 +68,7 @@ class CVVectorManager:
                 buffered = BytesIO()
                 # Convert to JPEG to reduce token usage vs PNG
                 img.save(buffered, format="JPEG", quality=85)
-                img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+                img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
                 base64_images.append(img_str)
 
             return base64_images
@@ -89,11 +94,15 @@ class CVVectorManager:
 
         # If hash is the same and DB exists, skip ingestion
         if new_hash == stored_hash and os.path.exists(self.db_path):
-            print(f"✅ File '{os.path.basename(file_path)}' is unchanged. Using existing vector data.")
+            print(
+                f"✅ File '{os.path.basename(file_path)}' is unchanged. Using existing vector data."
+            )
             self._vectorstore = self._init_vectorstore()
             return
 
-        print(f"👁️ AgenticHire Vision is 'reading' {file_path}. This may take a minute...")
+        print(
+            f"👁️ AgenticHire Vision is 'reading' {file_path}. This may take a minute..."
+        )
 
         # 1. Convert PDF to Images
         base64_images = self._pdf_to_base64_images(file_path)
@@ -104,12 +113,24 @@ class CVVectorManager:
             print(f"  Processing page {i + 1}/{len(base64_images)}...")
 
             system_msg = SystemMessage(
-                content="You are an expert recruitment assistant specializing in CV transcription.")
+                content="You are an expert recruitment assistant specializing in CV transcription."
+            )
 
-            human_msg = HumanMessage(content=[
-                {"type": "text", "text": "Transcribe the following CV page precisely..."},
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_img}", "detail": "high"}}
-            ])
+            human_msg = HumanMessage(
+                content=[
+                    {
+                        "type": "text",
+                        "text": "Transcribe the following CV page precisely...",
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{b64_img}",
+                            "detail": "high",
+                        },
+                    },
+                ]
+            )
 
             response = self.vision_model.invoke([system_msg, human_msg])
             clean_text_parts.append(response.content)
@@ -119,7 +140,9 @@ class CVVectorManager:
 
         # 3. Text Chunking
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1200, chunk_overlap=200, separators=["\n\n", "\n", "•", ". ", " "]
+            chunk_size=1200,
+            chunk_overlap=200,
+            separators=["\n\n", "\n", "•", ". ", " "],
         )
         chunks = text_splitter.split_text(full_reconstructed_text)
 
@@ -129,17 +152,20 @@ class CVVectorManager:
             embedding=self.embeddings,
             persist_directory=self.db_path,
             collection_name=self.collection_name,
-            ids=[f"id_{i}" for i in range(len(chunks))]
+            ids=[f"id_{i}" for i in range(len(chunks))],
         )
 
         # 5. Save the new hash
         with open(self.hash_file_path, "w") as f:
             f.write(new_hash)
 
-        print(f"✅ Vector DB updated. Successfully stored {len(chunks)} clean CV chunks.")
+        print(
+            f"✅ Vector DB updated. Successfully stored {len(chunks)} clean CV chunks."
+        )
 
     def get_context(self, query: str, k: int = 4) -> str:
-        if self._vectorstore is None: self._vectorstore = self._init_vectorstore()
+        if self._vectorstore is None:
+            self._vectorstore = self._init_vectorstore()
         docs = self._vectorstore.similarity_search(query, k=k)
         return "\n---\n".join([doc.page_content for doc in docs])
 
@@ -148,4 +174,4 @@ class CVVectorManager:
             self._vectorstore = self._init_vectorstore()
 
         all_docs = self._vectorstore.get()
-        return "\n".join(all_docs['documents'])
+        return "\n".join(all_docs["documents"])
