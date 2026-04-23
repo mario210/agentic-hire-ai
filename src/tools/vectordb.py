@@ -11,12 +11,9 @@ except ImportError:
     print("❌ ERROR: Missing dependencies. Run: pip install pdf2image pillow")
     raise
 
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
-from src import utils
-
 
 class CVVectorManager:
     """
@@ -25,28 +22,13 @@ class CVVectorManager:
     bypassing corrupted PDF structures.
     """
 
-    def __init__(self, db_path: str = "data/chroma_db", collection_name: str = "cv_collection",
-                 vision_model_name = "openai/gpt-4o",
-                 embedded_model="text-embedding-3-small"):
+    def __init__(self, vision_model, embeddings, 
+                 db_path: str = "data/chroma_db", 
+                 collection_name: str = "cv_collection"):
         self.db_path = db_path
         self.collection_name = collection_name
-
-        # 1. Vision Model (e.g., GPT-4o from OpenAI directly for best vision)
-        # Assuming utils.get_api_key returns a valid key
-        self.api_key = utils.get_api_key("OPENROUTER_API_KEY")
-        self.vision_model = ChatOpenAI(
-            model=vision_model_name,
-            temperature=0,
-            base_url="https://openrouter.ai/api/v1",
-            api_key=utils.get_api_key("OPENROUTER_API_KEY"),
-        )
-
-        # 2. Embeddings Model (Using your OpenRouter config)
-        self.embeddings = OpenAIEmbeddings(
-            model=embedded_model,
-            base_url="https://openrouter.ai/api/v1",
-            api_key=utils.get_api_key("OPENROUTER_API_KEY"),
-        )
+        self.vision_model = vision_model
+        self.embeddings = embeddings
         self._vectorstore = None
 
     def _init_vectorstore(self):
@@ -56,7 +38,8 @@ class CVVectorManager:
             persist_directory=self.db_path
         )
 
-    def _pdf_to_base64_images(self, file_path: str) -> List[str]:
+    @staticmethod
+    def _pdf_to_base64_images(file_path: str) -> List[str]:
         """
         Converts PDF pages into base64 encoded strings for the LLM.
         """

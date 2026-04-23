@@ -1,11 +1,6 @@
-import utils
-from langchain_openai import ChatOpenAI
 from src.schema.state import AgenticHireState, JobOffer
 from src.tools.vectordb import CVVectorManager
 from pydantic import BaseModel, Field
-from dotenv import load_dotenv, find_dotenv
-
-load_dotenv(find_dotenv(usecwd=True))
 
 class MatchRating(BaseModel):
     """Structured output for the matching logic."""
@@ -19,15 +14,10 @@ class OrchestratorAgent:
     experience stored in ChromaDB and filters for the best fits.
     """
 
-    def __init__(self, model_name: str = "openai/gpt-4o-mini", embedded_model_name: str = "text-embedding-3-small"):
-        self.llm = ChatOpenAI(
-            model=model_name,
-            temperature=0,
-            base_url="https://openrouter.ai/api/v1",
-            api_key=utils.get_api_key("OPENROUTER_API_KEY"),
-        )
+    def __init__(self, llm, vector_manager: CVVectorManager):
+        self.llm = llm
         # Initialize the Vector DB manager to fetch CV context
-        self.vector_manager = CVVectorManager(embedded_model=embedded_model_name)
+        self.vector_manager = vector_manager
         # Create a structured judge
         self.judge = self.llm.with_structured_output(MatchRating)
 

@@ -1,14 +1,9 @@
 import json
-import utils
 from typing import List
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from src.schema.state import AgenticHireState, JobOffer
-from src.tools.search import job_search_tool  # This is our @tool
+from src.tools.search import job_search_tool
 from src.utils import JobParser
-from dotenv import load_dotenv, find_dotenv
-
-load_dotenv(find_dotenv(usecwd=True))
 
 class ScoutAgent:
     """
@@ -16,13 +11,8 @@ class ScoutAgent:
     to find relevant job postings.
     """
 
-    def __init__(self, model_name: str = "openai/gpt-4o-mini"):
-        self.llm = ChatOpenAI(
-            model=model_name,
-            temperature=0,
-            base_url="https://openrouter.ai/api/v1",
-            api_key=utils.get_api_key("OPENROUTER_API_KEY"),
-        ).bind_tools([job_search_tool])
+    def __init__(self, llm):
+        self.llm = llm.bind_tools([job_search_tool])
         self.parser = JobParser()
 
     def __call__(self, state: AgenticHireState) -> dict:

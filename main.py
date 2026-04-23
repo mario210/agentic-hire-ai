@@ -1,17 +1,14 @@
 # main.py
 from src.graph import app
-from src.tools.vectordb import CVVectorManager
-import os
-from dotenv import load_dotenv
+from src.agents.agents import factory
 
-load_dotenv()
 
 CV_FILE_PATH = "data/cv/CV.pdf"
 
 
 def main():
     # 1. Prepare CV (Run once or when CV changes)
-    cv_manager = CVVectorManager()
+    cv_manager = factory.vector_manager
     cv_manager.ingest_cv(CV_FILE_PATH)
 
     # 2. Setup initial state

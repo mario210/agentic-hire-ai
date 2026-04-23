@@ -1,10 +1,6 @@
-import utils
-from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from src.schema.state import AgenticHireState
-from dotenv import load_dotenv, find_dotenv
 
-load_dotenv(find_dotenv(usecwd=True))
 
 class TailorAgent:
     """
@@ -12,13 +8,8 @@ class TailorAgent:
     to generate highly personalized application materials.
     """
 
-    def __init__(self, model_name: str = "openai/gpt-4o-mini"):
-        self.llm = ChatOpenAI(
-            model=model_name,
-            temperature=0.7, # Slightly higher temperature for creativity
-            base_url="https://openrouter.ai/api/v1",
-            api_key=utils.get_api_key("OPENROUTER_API_KEY"),
-        )
+    def __init__(self, llm):
+        self.llm = llm
 
     def __call__(self, state: AgenticHireState) -> dict:
         print("--- [NODE] EXECUTING TAILOR (CONTENT GENERATION) ---")

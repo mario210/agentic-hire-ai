@@ -1,17 +1,6 @@
 from langgraph.graph import StateGraph, END
 from src.schema.state import AgenticHireState
-from src.agents.scout import ScoutAgent
-from src.agents.orchestrator import OrchestratorAgent
-from src.agents.tailor import TailorAgent
-
-MODEL_NAME = "openai/gpt-4o-mini"
-EMBEDDED_MODEL_NAME = "text-embedding-3-small"
-
-# 1. Initialize the agents
-orchestrator = OrchestratorAgent(model_name=MODEL_NAME, embedded_model_name=EMBEDDED_MODEL_NAME)
-scout = ScoutAgent(model_name=MODEL_NAME)
-tailor = TailorAgent(model_name=MODEL_NAME)
-
+from src.agents.agents import factory
 
 def should_continue(state: AgenticHireState):
     """
@@ -28,9 +17,9 @@ def build_graph():
     workflow = StateGraph(AgenticHireState)
 
     # 3. Add Nodes (The Workers)
-    workflow.add_node("scout", scout)
-    workflow.add_node("orchestrator", orchestrator)
-    workflow.add_node("tailor", tailor)
+    workflow.add_node("scout", factory.scout)
+    workflow.add_node("orchestrator", factory.orchestrator)
+    workflow.add_node("tailor", factory.tailor)
 
     # 4. Set the Entry Point
     workflow.set_entry_point("scout")
