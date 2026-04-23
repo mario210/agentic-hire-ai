@@ -6,11 +6,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+CV_FILE_PATH = "data/cv/CV.pdf"
+
 
 def main():
-    # 1. Prepare your CV (Run once or when CV changes)
+    # 1. Prepare CV (Run once or when CV changes)
     cv_manager = CVVectorManager()
-    # cv_manager.ingest_cv("data/my_resume.pdf") # Uncomment to load PDF
+    cv_manager.ingest_cv(CV_FILE_PATH)
 
     # 2. Setup initial state
     # We fetch full text for the initial context
@@ -18,7 +20,7 @@ def main():
 
     initial_state = {
         "resume_context": initial_context,
-        "target_criteria": "Senior Python Developer, Remote, AI/ML focus",
+        "target_criteria": "Python Developer, Remote, AI/ML focus",
         "found_jobs": [],
         "shortlisted_jobs": [],
         "applications": {},

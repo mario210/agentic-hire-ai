@@ -36,7 +36,6 @@ def build_graph():
     workflow.set_entry_point("scout")
 
     # 5. Define the Flow (Edges)
-
     # After scouting, we check if we found anything
     workflow.add_conditional_edges(
         "scout",
@@ -56,6 +55,4 @@ def build_graph():
     # 6. Compile the graph
     return workflow.compile()
 
-
-# This 'app' variable is what you will run in main.py
 app = build_graph()

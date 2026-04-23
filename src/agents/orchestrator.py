@@ -54,20 +54,26 @@ class OrchestratorAgent:
             You are an expert Career Matchmaker. Compare the Job Description with the Candidate's Experience.
 
             JOB DESCRIPTION:
-            Title: {job.title}
-            Description: {job.description}
+            {job.title} at {job.company}
+            {job.description}
 
-            CANDIDATE EVIDENCE (from CV):
+            CANDIDATE EVIDENCE:
             {relevant_cv_parts}
 
-            Rate the match from 0.0 to 1.0. 
-            Be strict. Only give > 0.8 if the candidate has the core required technologies.
+            SCORING RULES:
+            - 1.0: Perfect match (all tech stack and seniority levels align).
+            - 0.8: Great match (has core skills, maybe missing one secondary skill).
+            - 0.6: Good match (has the foundation, can learn the rest).
+            - < 0.5: Poor match.
+
+            Consider synonyms (e.g., 'GenAI' matches 'LLM' or 'GPT'). 
+            Don't penalize if 'Remote' isn't on the CV if the tech skills are a 100% match.
             """
 
             rating = self.judge.invoke(prompt)
 
             # 3. Decision Step: Add to shortlist if it's a strong match
-            if rating.score >= 0.75:
+            if rating.score >= 0.65:
                 job.match_score = rating.score
                 job.analysis = rating.reasoning
                 shortlisted_jobs.append(job)

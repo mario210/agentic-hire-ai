@@ -29,7 +29,7 @@ class ScoutAgent:
         print("--- [NODE] EXECUTING SCOUT AGENT ---")
 
         resume_context = state.get("resume_context", "No resume context provided.")
-        target_criteria = state.get("target_criteria", "Senior Developer roles")
+        target_criteria = state.get("target_criteria", "AI Python Developer roles")
 
         system_msg = SystemMessage(content=(
             "You are a professional Recruitment Scout. Use the 'job_search_tool' "
