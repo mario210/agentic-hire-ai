@@ -16,30 +16,17 @@ uv sync
 ```
 This command will automatically create a virtual environment (`.venv`) and install all required dependencies listed in the `pyproject.toml` and `uv.lock` files.
 
-## Project Structure
-The project follows a modular architecture designed for scalability and clear separation of concerns between the LangGraph orchestration and the individual AI Agents.
+### 3. Install `OrioSearch`
+Check how-to: https://www.oriosearch.org
+
+### 4. Create `.env` file
+Create a .env file in the root directory of the project and store your configuration and API keys there:
 ```
-agentic-hire-ai/
-├── data/                   # Local storage for source files (PDF resumes) and ChromaDB persistent data.
-├── src/
-│   ├── agents/             # Logic for LangGraph nodes (The "Brains" of the system).
-│   │   ├── agents.py       # Core agent definitions and initialization.
-│   │   ├── orchestrator.py # Matchmaker logic, decision making, and task planning.
-│   │   ├── scout.py        # Job fetching logic (Web Scraping / API integrations).
-│   │   └── tailor.py       # Content generation for personalized applications.
-│   ├── tools/              # Specialized utilities used by agents to interact with the world.
-│   │   ├── job_validator.py# Tool for validating fetched job requirements.
-│   │   ├── scrape.py       # Tool for scraping job descriptions from the web.
-│   │   ├── search.py       # Search engine API wrappers (e.g., Tavily, Google).
-│   │   └── vectordb.py     # Vector DB (RAG) integration for semantic resume matching.
-│   ├── schema/             # Data models and shared state definitions.
-│   │   └── state.py        # The TypedDict defining the LangGraph State.
-│   ├── debug_db.py         # Utility for debugging and inspecting the database.
-│   ├── graph.py            # The core LangGraph definition, node connections, and compilation.
-│   └── utils.py            # Helper functions (PDF parsing, text formatting, logging).
-├── .env                    # Environment variables and API keys (OpenAI, Anthropic, etc.).
-└── main.py                 # Main entry point for the CLI application.
+OPENROUTER_API_KEY="YOUR_API_KEY"
+ORIOSEARCH_BASE_URL="http://localhost:8000"
 ```
+
+---
 
 # 🧠 AgenticHire AI
 
@@ -179,8 +166,33 @@ Generates final application insights:
 ╔════════════════════════════════════════════════════════════╗
 ║                    EXTERNAL DEPENDENCIES                   ║
 ╠════════════════════════════════════════════════════════════╣
-║ • Job Websites / APIs (OrioSearch)                     ║
+║ • Job Websites / APIs (OrioSearch)                         ║
 ║ • Vector Database (ChromaDB)                               ║
 ║ • Local Resume PDFs                                        ║
 ╚════════════════════════════════════════════════════════════╝
+```
+
+## ⚙️ Project Structure
+The project follows a modular architecture designed for scalability and clear separation of concerns between the LangGraph orchestration and the individual AI Agents.
+```
+agentic-hire-ai/
+├── data/                   # Local storage for source files (PDF resumes) and ChromaDB persistent data.
+├── src/
+│   ├── agents/             # Logic for LangGraph nodes (The "Brains" of the system).
+│   │   ├── agents.py       # Core agent definitions and initialization.
+│   │   ├── orchestrator.py # Matchmaker logic, decision making, and task planning.
+│   │   ├── scout.py        # Job fetching logic (Web Scraping / API integrations).
+│   │   └── tailor.py       # Content generation for personalized applications.
+│   ├── tools/              # Specialized utilities used by agents to interact with the world.
+│   │   ├── job_validator.py# Tool for validating fetched job requirements.
+│   │   ├── scrape.py       # Tool for scraping job descriptions from the web.
+│   │   ├── search.py       # Search engine API wrappers (e.g., Tavily, Google).
+│   │   └── vectordb.py     # Vector DB (RAG) integration for semantic resume matching.
+│   ├── schema/             # Data models and shared state definitions.
+│   │   └── state.py        # The TypedDict defining the LangGraph State.
+│   ├── debug_db.py         # Utility for debugging and inspecting the database.
+│   ├── graph.py            # The core LangGraph definition, node connections, and compilation.
+│   └── utils.py            # Helper functions (PDF parsing, text formatting, logging).
+├── .env                    # Environment variables and API keys (OpenAI, Anthropic, etc.).
+└── main.py                 # Main entry point for the CLI application.
 ```
