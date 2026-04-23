@@ -5,10 +5,10 @@ from src.agents.orchestrator import OrchestratorAgent
 from src.agents.tailor import TailorAgent
 
 MODEL_NAME = "openai/gpt-4o-mini"
-EMBEDDED_LLM_MODEL_NAME = "text-embedding-3-small"
+EMBEDDED_MODEL_NAME = "text-embedding-3-small"
 
 # 1. Initialize the agents
-orchestrator = OrchestratorAgent(model_name=MODEL_NAME, embedded_model_name=EMBEDDED_LLM_MODEL_NAME)
+orchestrator = OrchestratorAgent(model_name=MODEL_NAME, embedded_model_name=EMBEDDED_MODEL_NAME)
 scout = ScoutAgent(model_name=MODEL_NAME)
 tailor = TailorAgent(model_name=MODEL_NAME)
 
