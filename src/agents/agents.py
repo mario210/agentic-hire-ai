@@ -2,6 +2,7 @@ from src.agents.scout import ScoutAgent
 from src.agents.orchestrator import OrchestratorAgent
 from src.agents.tailor import TailorAgent
 from src.tools.vectordb import CVVectorManager
+from src.tools.job_validator import JobValidator
 from src import utils
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from dotenv import load_dotenv, find_dotenv
@@ -14,6 +15,7 @@ ORCHESTRATOR_MODEL_NAME = "openai/gpt-4o-mini"
 TAILOR_MODEL_NAME = "openai/gpt-4o-mini"
 VISION_MODEL_NAME = "openai/gpt-4o"
 EMBEDDED_MODEL_NAME = "text-embedding-3-small"
+VALIDATOR_MODEL_NAME = "openai/gpt-4o-mini"
 
 class AgentFactory:
     """
@@ -62,11 +64,18 @@ class AgentFactory:
             temperature=0.7,
             **common_params
         )
+        
+        validator_llm = ChatOpenAI(
+            model=VALIDATOR_MODEL_NAME,
+            temperature=0,
+            **common_params
+        )
 
-        # Inject them into the agents
+        # Inject them into the agents and tools
         self.scout = ScoutAgent(llm=scout_llm)
         self.orchestrator = OrchestratorAgent(llm=orchestrator_llm, vector_manager=self.vector_manager)
         self.tailor = TailorAgent(llm=tailor_llm)
+        self.job_validator = JobValidator(llm=validator_llm)
 
 
 # Single instance to be used across the app

@@ -1,7 +1,6 @@
 from langgraph.graph import StateGraph, END
 from src.schema.state import AgenticHireState
 from src.agents.agents import factory
-from src.tools.job_validator import JobValidator
 from loguru import logger
 
 # Maximum number of times the scout can run to prevent infinite loops
@@ -44,8 +43,8 @@ def validate_and_limit_jobs_node(state: AgenticHireState) -> dict:
     max_offers = state.get("max_offers", 5)
     
     logger.debug(f"Validating {len(found_jobs)} found jobs")
-    # We only want to keep valid jobs
-    valid_jobs = [job for job in found_jobs if JobValidator.is_job_valid(job)]
+    # We only want to keep valid jobs using the configured JobValidator
+    valid_jobs = [job for job in found_jobs if factory.job_validator.is_job_valid(job)]
     
     logger.debug(f"Found {len(valid_jobs)} valid jobs out of {len(found_jobs)}")
     

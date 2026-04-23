@@ -23,14 +23,18 @@ agentic-hire-ai/
 ├── data/                   # Local storage for source files (PDF resumes) and ChromaDB persistent data.
 ├── src/
 │   ├── agents/             # Logic for LangGraph nodes (The "Brains" of the system).
+│   │   ├── agents.py       # Core agent definitions and initialization.
 │   │   ├── orchestrator.py # Matchmaker logic, decision making, and task planning.
 │   │   ├── scout.py        # Job fetching logic (Web Scraping / API integrations).
 │   │   └── tailor.py       # Content generation for personalized applications.
 │   ├── tools/              # Specialized utilities used by agents to interact with the world.
-│   │   ├── vectordb.py     # Vector DB (RAG) integration for semantic resume matching.
-│   │   └── search.py       # Search engine API wrappers (e.g., Tavily, Google).
+│   │   ├── job_validator.py# Tool for validating fetched job requirements.
+│   │   ├── scrape.py       # Tool for scraping job descriptions from the web.
+│   │   ├── search.py       # Search engine API wrappers (e.g., Tavily, Google).
+│   │   └── vectordb.py     # Vector DB (RAG) integration for semantic resume matching.
 │   ├── schema/             # Data models and shared state definitions.
 │   │   └── state.py        # The TypedDict defining the LangGraph State.
+│   ├── debug_db.py         # Utility for debugging and inspecting the database.
 │   ├── graph.py            # The core LangGraph definition, node connections, and compilation.
 │   └── utils.py            # Helper functions (PDF parsing, text formatting, logging).
 ├── .env                    # Environment variables and API keys (OpenAI, Anthropic, etc.).
