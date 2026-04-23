@@ -41,8 +41,146 @@ agentic-hire-ai/
 └── main.py                 # Main entry point for the CLI application.
 ```
 
-### Key Architectural Decisions
+# 🧠 AgenticHire AI
 
-State Separation: The AgenticHireState is isolated in src/schema/ to prevent circular imports when nodes need to reference the state type.
-Decoupled Tools: Agents do not communicate with databases or APIs directly. They use the abstractions in src/tools/, making it easy to swap ChromaDB for Pinecone or change the scraping engine without touching the Agent logic.
-Orchestrator-Worker Pattern: orchestrator.py acts as the technical lead, evaluating jobs and delegating "writing" tasks to the tailor.py worker.
+An AI-powered agent system that autonomously searches, validates, evaluates, and tailors job applications using a multi-agent LangGraph architecture combined with RAG and Vision-based CV understanding.
+
+---
+
+## 🔑 Key Features
+
+### 🔎 Autonomous Job Discovery
+The system uses a Scout Agent to search and scrape job postings from external sources using search and scraping tools.
+
+---
+
+### 🧹 Job Validation Layer
+Every discovered job is validated before further processing:
+- Checks if the job URL is reachable
+- Detects expired or closed job postings using an LLM
+- Limits number of valid jobs for efficiency
+
+---
+
+### 🔁 Controlled Agent Loop
+A safe retry mechanism ensures the system does not loop infinitely:
+- Tracks number of scout runs
+- Re-runs search if not enough valid jobs are found
+- Stops after reaching defined limits
+
+---
+
+### 🧠 Orchestrator (Matchmaker)
+The Orchestrator evaluates job suitability using:
+- CV context retrieval (RAG)
+- LLM-based scoring (0.0 → 1.0)
+- Shortlisting only strong matches
+
+---
+
+### 📚 RAG (Retrieval-Augmented Generation)
+The system retrieves relevant CV knowledge before evaluating jobs:
+- Matches job description with candidate experience
+- Improves scoring accuracy using semantic context
+
+---
+
+### 👁️ Vision-Based CV Understanding (Multimodal Pipeline)
+
+Instead of relying on broken PDF text extraction, the system uses a Vision LLM pipeline:
+
+PDF → Images → Vision LLM → Clean Text → Chunking → Embeddings → ChromaDB
+
+This allows:
+- Accurate CV parsing from any PDF layout
+- Better extraction of skills and experience
+- Stronger semantic matching in RAG
+
+---
+
+### ✍️ Tailor Agent
+Generates final application insights:
+- Evaluates whether a job is worth applying to
+- Uses orchestrator reasoning + CV context
+- Produces a concise decision per job
+
+---
+
+## 🏗️ Architecture Overview (ASCII)
+```
+╔════════════════════════════════════════════════════════════╗
+║                       ENTRY POINT                          ║
+╠════════════════════════════════════════════════════════════╣
+║                     main.py (CLI)                          ║
+╚═══════════════════════════════╦════════════════════════════╝
+                                ║
+                                ▼
+
+╔════════════════════════════════════════════════════════════╗
+║                   LANGGRAPH ORCHESTRATION                  ║
+╠════════════════════════════════════════════════════════════╣
+
+    ┌────────────────────────────┐
+    │        SCOUT AGENT         │
+    │ - Job search               │
+    │ - Web scraping             │
+    └─────────────┬──────────────┘
+                  │
+                  ▼
+
+    ┌────────────────────────────┐
+    │     VALIDATE JOBS NODE     │
+    │ - URL health check         │
+    │ - Expiration detection     │
+    │ - Limit results            │
+    └─────────────┬──────────────┘
+                  │
+                  ▼
+
+    ┌────────────────────────────┐
+    │   should_rescout()         │
+    ├──────────────┬─────────────┤
+    │ rescout      │ proceed     │ end
+    ▼              ▼             ▼
+ SCOUT     ┌──────────────┐     END
+           │ ORCHESTRATOR │
+           │ (MATCHMAKER) │
+           └──────┬───────┘
+                  │
+                  ▼
+
+    ┌────────────────────────────┐
+    │        RAG LAYER           │
+    │ - CV semantic retrieval    │
+    └─────────────┬──────────────┘
+                  │
+                  ▼
+
+    ┌────────────────────────────┐
+    │       TAILOR AGENT         │
+    │ - Final evaluation text    │
+    └─────────────┬──────────────┘
+                  ▼
+                 END
+
+╚════════════════════════════════════════════════════════════╝
+
+
+╔════════════════════════════════════════════════════════════╗
+║                         TOOLS LAYER                        ║
+╠════════════════════════════════════════════════════════════╣
+║ • job_search_tool                                          ║
+║ • scrape_webpage_tool                                      ║
+║ • job_validator (HTTP + LLM)                               ║
+║ • vectordb (RAG retrieval)                                 ║
+╚════════════════════════════════════════════════════════════╝
+
+
+╔════════════════════════════════════════════════════════════╗
+║                    EXTERNAL DEPENDENCIES                   ║
+╠════════════════════════════════════════════════════════════╣
+║ • Job Websites / APIs (OrioSearch)                     ║
+║ • Vector Database (ChromaDB)                               ║
+║ • Local Resume PDFs                                        ║
+╚════════════════════════════════════════════════════════════╝
+```
