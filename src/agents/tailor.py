@@ -1,5 +1,6 @@
 from langchain_core.messages import SystemMessage, HumanMessage
 from src.schema.state import AgenticHireState
+from urllib.parse import urlparse
 
 
 class TailorAgent:
@@ -27,8 +28,8 @@ class TailorAgent:
             print(f"Generating application materials for: {job.title}...")
 
             prompt = f"""
-            You are an expert Career Coach and Technical Writer. 
-            Your goal is to write a short, punchy, and professional Cover Letter.
+            You are a highly critical and skeptical Career Advisor. 
+            Your goal is to evaluate if it's genuinely worth applying for this job, returning ONLY a single sentence.
 
             CANDIDATE CV CONTEXT:
             {resume_context}
@@ -42,20 +43,29 @@ class TailorAgent:
             {job.analysis}
 
             INSTRUCTIONS:
-            1. Focus on how the candidate's specific experience (CV Context) solves the company's problems.
-            2. Keep it under 250 words.
-            3. Use a confident but humble tone.
-            4. Highlight the match reasoning provided.
+            1. Analyze the match between the CV and the job description.
+            2. Be skeptical. Look for reasons why it might NOT be a great fit (e.g., missing skills, seniority mismatch).
+            3. Write EXACTLY ONE concise sentence stating whether it's worth applying or not, and briefly why.
             """
 
             # Generate the content
             response = self.llm.invoke([
-                SystemMessage(content="You are a professional technical recruiter."),
+                SystemMessage(content="You are a highly critical and skeptical Career Advisor."),
                 HumanMessage(content=prompt)
             ])
 
+            # Extract portal from URL
+            portal = "Unknown Portal"
+            if job.url:
+                try:
+                    portal = urlparse(job.url).netloc.replace("www.", "")
+                except Exception:
+                    pass
+
+            founded_job_offer = f"{job.url} - {portal} - {job.company} - {job.title}\n\n{response.content}"
+
             applications[job.id] = {
-                "cover_letter": response.content,
+                "founded_job_offer": founded_job_offer,
                 "job_title": job.title,
                 "company": job.company
             }

@@ -1,29 +1,34 @@
-import json
 from typing import List
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage, BaseMessage
 from src.schema.state import AgenticHireState, JobOffer
 from src.tools.search import job_search_tool
+from src.tools.scrape import scrape_webpage_tool
 from src.utils import JobParser
 
 class ScoutAgent:
     """
     The ScoutAgent analyzes the candidate's CV and uses OrioSearch
-    to find relevant job postings.
+    to find relevant job postings. It also scrapes the found portals to extract 
+    concrete job offers instead of just search pages.
     """
 
     def __init__(self, llm):
-        self.llm = llm.bind_tools([job_search_tool])
+        # Bind both search and scrape tools to the LLM
+        self.llm = llm.bind_tools([job_search_tool, scrape_webpage_tool])
         self.parser = JobParser()
 
     def __call__(self, state: AgenticHireState) -> dict:
         print("--- [NODE] EXECUTING SCOUT AGENT ---")
 
         resume_context = state.get("resume_context", "No resume context provided.")
-        target_criteria = state.get("target_criteria", "AI Python Developer roles")
+        # target_criteria is not in the type definition, fallback correctly
+        target_criteria = state.get("target_criteria", "AI Python Developer roles") if "target_criteria" in state else "AI Python Developer roles"
 
         system_msg = SystemMessage(content=(
-            "You are a professional Recruitment Scout. Use the 'job_search_tool' "
-            "to find job openings that match the candidate's CV."
+            "You are a professional Recruitment Scout. Your task is to find CONCRETE job offers, not just search portal pages.\n"
+            "Step 1: Use the 'job_search_tool' to find job portals or specific job openings that match the candidate's CV.\n"
+            "Step 2: If the search returns a job portal or a list page, use the 'scrape_webpage_tool' to open that URL and find concrete job postings.\n"
+            "Step 3: Make sure you return information about specific job offers (title, company, description, concrete job URL)."
         ))
 
         human_msg = HumanMessage(content=(
@@ -31,24 +36,52 @@ class ScoutAgent:
             f"Preferences: {target_criteria}"
         ))
 
-        response = self.llm.invoke([system_msg, human_msg])
+        messages: List[BaseMessage] = [system_msg, human_msg]
+        
         all_found_jobs: List[JobOffer] = []
-
-        # 1. Check if the LLM generated tool calls
-        if response.tool_calls:
+        
+        for _ in range(3): # max 3 iterations
+            response = self.llm.invoke(messages)
+            messages.append(response)
+            
+            if not response.tool_calls:
+                break
+                
             for tool_call in response.tool_calls:
-                # Use .invoke() on the tool object.
-                # tool_call['args'] is already a dict: {"query": "..."}
-                raw_results = job_search_tool.invoke(tool_call["args"])
+                if tool_call["name"] == "job_search_tool":
+                    raw_results = job_search_tool.invoke(tool_call["args"])
+                    messages.append(
+                        ToolMessage(
+                            name="job_search_tool",
+                            tool_call_id=tool_call["id"],
+                            content=str(raw_results)
+                        )
+                    )
+                elif tool_call["name"] == "scrape_webpage_tool":
+                    raw_results = scrape_webpage_tool.invoke(tool_call["args"])
+                    messages.append(
+                        ToolMessage(
+                            name="scrape_webpage_tool",
+                            tool_call_id=tool_call["id"],
+                            content=str(raw_results)
+                        )
+                    )
 
-                structured_batch = self.parser.parse(str(raw_results))
-                all_found_jobs.extend(structured_batch)
+        # After the loop, the collected tool responses should contain the job details.
+        raw_text_to_parse = ""
+        for msg in messages:
+            if isinstance(msg, ToolMessage):
+                raw_text_to_parse += msg.content + "\n\n"
+            elif hasattr(msg, 'content') and msg.content:
+                raw_text_to_parse += msg.content + "\n\n"
 
-        # 2. Fallback if no tool calls were made
+        if raw_text_to_parse:
+            all_found_jobs = self.parser.parse(raw_text_to_parse)
+
+        # Fallback if no tool calls were made or no jobs found
         if not all_found_jobs:
-            print("⚠️ No tool calls or results. Running fallback search...")
+            print("⚠️ No jobs found through agent loop. Running fallback search...")
             fallback_query = f"{target_criteria} jobs for someone with: {resume_context[:100]}"
-            # We call .invoke with the expected dict schema of the tool
             raw_results = job_search_tool.invoke({"query": fallback_query})
             all_found_jobs = self.parser.parse(str(raw_results))
 

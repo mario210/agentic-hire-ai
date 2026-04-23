@@ -36,7 +36,7 @@ def main():
     apps = final_state.get("applications", {})
     for job_id, content in apps.items():
         print(f"\n📍 {content['job_title']} at {content['company']}")
-        print(f"--- COVER LETTER ---\n{content['cover_letter'][:300]}...")
+        print(f"{content['founded_job_offer'][:500]}...")
         print("-" * 20)
 
 

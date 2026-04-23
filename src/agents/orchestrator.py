@@ -63,7 +63,7 @@ class OrchestratorAgent:
             rating = self.judge.invoke(prompt)
 
             # 3. Decision Step: Add to shortlist if it's a strong match
-            if rating.score >= 0.65:
+            if rating.score >= 0.7:
                 job.match_score = rating.score
                 job.analysis = rating.reasoning
                 shortlisted_jobs.append(job)
