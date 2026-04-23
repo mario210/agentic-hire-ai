@@ -1,5 +1,6 @@
 import os
 import base64
+import hashlib
 from io import BytesIO
 from typing import List
 
@@ -30,6 +31,7 @@ class CVVectorManager:
         self.vision_model = vision_model
         self.embeddings = embeddings
         self._vectorstore = None
+        self.hash_file_path = os.path.join(self.db_path, "cv_hash.txt")
 
     def _init_vectorstore(self):
         return Chroma(
@@ -37,6 +39,16 @@ class CVVectorManager:
             embedding_function=self.embeddings,
             persist_directory=self.db_path
         )
+
+    @staticmethod
+    def _calculate_file_hash(file_path: str) -> str:
+        """Calculates the SHA256 hash of a file."""
+        sha256_hash = hashlib.sha256()
+        with open(file_path, "rb") as f:
+            # Read and update hash in chunks to handle large files
+            for byte_block in iter(lambda: f.read(4096), b""):
+                sha256_hash.update(byte_block)
+        return sha256_hash.hexdigest()
 
     @staticmethod
     def _pdf_to_base64_images(file_path: str) -> List[str]:
@@ -63,9 +75,23 @@ class CVVectorManager:
         """
         The multimodal ingestion pipeline:
         PDF -> Images -> Vision LLM -> Clean Text -> Chunks -> ChromaDB.
+        Caches the CV hash to avoid re-processing unchanged files.
         """
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Resume not found at: {file_path}")
+
+        # Caching mechanism
+        new_hash = self._calculate_file_hash(file_path)
+        stored_hash = None
+        if os.path.exists(self.hash_file_path):
+            with open(self.hash_file_path, "r") as f:
+                stored_hash = f.read().strip()
+
+        # If hash is the same and DB exists, skip ingestion
+        if new_hash == stored_hash and os.path.exists(self.db_path):
+            print(f"✅ CV '{os.path.basename(file_path)}' is unchanged. Using existing vector data.")
+            self._vectorstore = self._init_vectorstore()
+            return
 
         print(f"👁️ AgenticHire Vision is 'reading' {file_path}. This may take a minute...")
 
@@ -80,24 +106,9 @@ class CVVectorManager:
             system_msg = SystemMessage(
                 content="You are an expert recruitment assistant specializing in CV transcription.")
 
-            # We construct a multimodal message
             human_msg = HumanMessage(content=[
-                {
-                    "type": "text",
-                    "text": (
-                        "Transcribe the following CV page precisely. Retain the "
-                        "original layout, bullet points, and structure. "
-                        "Crucially, capture all technical skills, dates, job titles, "
-                        "and project descriptions."
-                    )
-                },
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/jpeg;base64,{b64_img}",
-                        "detail": "high"  # Ensures high-resolution processing
-                    }
-                }
+                {"type": "text", "text": "Transcribe the following CV page precisely..."},
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_img}", "detail": "high"}}
             ])
 
             response = self.vision_model.invoke([system_msg, human_msg])
@@ -106,13 +117,10 @@ class CVVectorManager:
         full_reconstructed_text = "\n\n".join(clean_text_parts)
         print(f"✅ Reconstructed CV text (length: {len(full_reconstructed_text)})")
 
-        # 3. Text Chunking (Standard RAG from here)
+        # 3. Text Chunking
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1200,  # Increased context per chunk
-            chunk_overlap=200,
-            separators=["\n\n", "\n", "•", ". ", " "]  # Multi-level separators
+            chunk_size=1200, chunk_overlap=200, separators=["\n\n", "\n", "•", ". ", " "]
         )
-
         chunks = text_splitter.split_text(full_reconstructed_text)
 
         # 4. Create Vector Store
@@ -121,8 +129,12 @@ class CVVectorManager:
             embedding=self.embeddings,
             persist_directory=self.db_path,
             collection_name=self.collection_name,
-            ids=[f"id_{i}" for i in range(len(chunks))]  # Optional but good practice
+            ids=[f"id_{i}" for i in range(len(chunks))]
         )
+
+        # 5. Save the new hash
+        with open(self.hash_file_path, "w") as f:
+            f.write(new_hash)
 
         print(f"✅ Vector DB updated. Successfully stored {len(chunks)} clean CV chunks.")
 
@@ -135,6 +147,5 @@ class CVVectorManager:
         if self._vectorstore is None:
             self._vectorstore = self._init_vectorstore()
 
-        # Retrieve all documents using the newer API
         all_docs = self._vectorstore.get()
         return "\n".join(all_docs['documents'])
