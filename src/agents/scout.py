@@ -18,17 +18,31 @@ class ScoutAgent:
         self.parser = JobParser()
 
     def __call__(self, state: AgenticHireState) -> dict:
-        print("--- [NODE] EXECUTING SCOUT AGENT ---")
+        scout_runs = state.get("scout_runs", 0) + 1
+        print(f"--- [NODE] EXECUTING SCOUT AGENT (Run {scout_runs}) ---")
 
         resume_context = state.get("resume_context", "No resume context provided.")
         # target_criteria is not in the type definition, fallback correctly
         target_criteria = state.get("target_criteria", "AI Python Developer roles") if "target_criteria" in state else "AI Python Developer roles"
 
+        # Extract previously evaluated jobs to avoid duplicates on subsequent runs
+        evaluated_jobs = state.get("found_jobs", [])
+        evaluated_titles = [job.title for job in evaluated_jobs if hasattr(job, 'title')]
+
+        # Add a slight variation to the prompt on subsequent runs to encourage new results
+        search_variation = ""
+        if scout_runs > 1:
+             search_variation = f" This is search attempt #{scout_runs}. Try finding different, more recent, or alternative job postings than before."
+             if evaluated_titles:
+                 search_variation += f"\nIMPORTANT: Skip these previously evaluated jobs: {', '.join(evaluated_titles)}"
+
         system_msg = SystemMessage(content=(
-            "You are a professional Recruitment Scout. Your task is to find CONCRETE job offers, not just search portal pages.\n"
+            "You are a professional Recruitment Scout. Your task is to find CONCRETE, ACTIVE job offers, not just search portal pages.\n"
             "Step 1: Use the 'job_search_tool' to find job portals or specific job openings that match the candidate's CV.\n"
             "Step 2: If the search returns a job portal or a list page, use the 'scrape_webpage_tool' to open that URL and find concrete job postings.\n"
-            "Step 3: Make sure you return information about specific job offers (title, company, description, concrete job URL)."
+            "Step 3: IMPORTANT: Check the scraped content of each job offer for signs that it is expired, closed, or no longer accepting applications (e.g., 'offer expired', 'job is closed', 'position filled'). If it is expired, discard it and search for another one.\n"
+            "Step 4: Make sure you return information ONLY about specific, active job offers (title, company, description, concrete job URL)."
+            f"{search_variation}"
         ))
 
         human_msg = HumanMessage(content=(
@@ -87,5 +101,6 @@ class ScoutAgent:
 
         return {
             "found_jobs": all_found_jobs,
+            "scout_runs": scout_runs,
             "status": f"Scouted {len(all_found_jobs)} opportunities."
         }

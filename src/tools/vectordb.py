@@ -89,7 +89,7 @@ class CVVectorManager:
 
         # If hash is the same and DB exists, skip ingestion
         if new_hash == stored_hash and os.path.exists(self.db_path):
-            print(f"✅ CV '{os.path.basename(file_path)}' is unchanged. Using existing vector data.")
+            print(f"✅ File '{os.path.basename(file_path)}' is unchanged. Using existing vector data.")
             self._vectorstore = self._init_vectorstore()
             return
 

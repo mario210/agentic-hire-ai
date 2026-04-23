@@ -18,16 +18,22 @@ class JobOffer(BaseModel):
     analysis: Optional[str] = Field(default=None, description="Orchestrator's reasoning for this match")
 
 
-class AgenticHireState(TypedDict):
+class AgenticHireState(TypedDict, total=False):
     """
     The shared state of the LangGraph workflow.
     """
     # The raw text or summarized version of your CV retrieved from the Vector DB
     resume_context: str
+    
+    # Target criteria for job search
+    target_criteria: str
 
     # List of all raw job postings found by the Scout
     # Annotated with operator.add means new results are appended to the list
     found_jobs: Annotated[List[JobOffer], operator.add]
+
+    # List of jobs that have been validated
+    valid_jobs: List[JobOffer]
 
     # Jobs that passed the Orchestrator's quality gate
     shortlisted_jobs: List[JobOffer]
@@ -42,3 +48,9 @@ class AgenticHireState(TypedDict):
 
     # Track which step we are currently in or any errors
     status: str
+    
+    # Target number of valid offers to find
+    max_offers: int
+    
+    # Track how many times the scout has run to prevent infinite loops
+    scout_runs: int

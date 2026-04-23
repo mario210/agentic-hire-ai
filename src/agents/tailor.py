@@ -62,7 +62,7 @@ class TailorAgent:
                 except Exception:
                     pass
 
-            founded_job_offer = f"{job.url} - {portal} - {job.company} - {job.title}\n\n{response.content}"
+            founded_job_offer = f"{portal} -> {job.url}\n\n{response.content}"
 
             applications[job.id] = {
                 "founded_job_offer": founded_job_offer,

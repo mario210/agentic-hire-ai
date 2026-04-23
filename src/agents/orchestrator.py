@@ -24,14 +24,14 @@ class OrchestratorAgent:
     def __call__(self, state: AgenticHireState) -> dict:
         print("--- [NODE] EXECUTING ORCHESTRATOR (MATCHMAKER) ---")
 
-        found_jobs = state.get("found_jobs", [])
+        valid_jobs = state.get("valid_jobs", [])
         shortlisted_jobs = []
 
-        if not found_jobs:
-            print("⚠️ No jobs found to analyze.")
-            return {"status": "Orchestrator skipped: No jobs found."}
+        if not valid_jobs:
+            print("⚠️ No valid jobs found to analyze.")
+            return {"status": "Orchestrator skipped: No valid jobs found."}
 
-        for job in found_jobs:
+        for job in valid_jobs:
             print(f"Analyzing: {job.title} at {job.company}...")
 
             # 1. RAG Step: Get specific context from CV for THIS job

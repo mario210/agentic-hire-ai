@@ -1,13 +1,35 @@
-from langchain_core._api import path
-
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from src.tools.vectordb import CVVectorManager
+from src import utils
 from dotenv import load_dotenv
+from agents.agents import VISION_MODEL_NAME, EMBEDDED_MODEL_NAME
 
 load_dotenv()
 
+DB_PATH = "../../data/chroma_db"
+
 def inspect_db():
-    path = "../../data/chroma_db"
-    manager = CVVectorManager(db_path = path)
+    common_params = {
+        "base_url": "https://openrouter.ai/api/v1",
+        "api_key": utils.get_api_key("OPENROUTER_API_KEY"),
+    }
+
+    vision_model = ChatOpenAI(
+        model=VISION_MODEL_NAME,
+        temperature=0,
+        **common_params
+    )
+
+    embeddings = OpenAIEmbeddings(
+        model=EMBEDDED_MODEL_NAME,
+        **common_params
+    )
+
+    manager = CVVectorManager(
+        vision_model=vision_model,
+        embeddings=embeddings,
+        db_path=DB_PATH
+    )
 
     # 1. Get all raw data
     raw_data = manager._init_vectorstore().get()
