@@ -4,4 +4,13 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "aiohttp>=3.13.5",
+    "black[d]>=26.3.1",
+    "langchain>=1.2.15",
+    "langchain-chroma>=1.1.0",
+    "langchain-community>=0.4.1",
+    "langchain-openai>=1.2.0",
+    "pydantic>=2.13.3",
+    "python-dotenv>=1.2.2",
+]
