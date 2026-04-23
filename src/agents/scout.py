@@ -4,6 +4,7 @@ from src.schema.state import AgenticHireState, JobOffer
 from src.tools.search import job_search_tool
 from src.tools.scrape import scrape_webpage_tool
 from src.utils import JobParser
+from loguru import logger
 
 class ScoutAgent:
     """
@@ -19,7 +20,7 @@ class ScoutAgent:
 
     def __call__(self, state: AgenticHireState) -> dict:
         scout_runs = state.get("scout_runs", 0) + 1
-        print(f"--- [NODE] EXECUTING SCOUT AGENT (Run {scout_runs}) ---")
+        logger.info(f"--- [NODE] EXECUTING SCOUT AGENT (Run {scout_runs}) ---")
 
         resume_context = state.get("resume_context", "No resume context provided.")
         # target_criteria is not in the type definition, fallback correctly
@@ -28,6 +29,8 @@ class ScoutAgent:
         # Extract previously evaluated jobs to avoid duplicates on subsequent runs
         evaluated_jobs = state.get("found_jobs", [])
         evaluated_titles = [job.title for job in evaluated_jobs if hasattr(job, 'title')]
+        
+        logger.debug(f"Previously evaluated jobs count: {len(evaluated_titles)}")
 
         # Add a slight variation to the prompt on subsequent runs to encourage new results
         search_variation = ""
@@ -35,6 +38,7 @@ class ScoutAgent:
              search_variation = f" This is search attempt #{scout_runs}. Try finding different, more recent, or alternative job postings than before."
              if evaluated_titles:
                  search_variation += f"\nIMPORTANT: Skip these previously evaluated jobs: {', '.join(evaluated_titles)}"
+                 logger.debug("Added search variation to avoid previously evaluated jobs.")
 
         system_msg = SystemMessage(content=(
             "You are a professional Recruitment Scout. Your task is to find CONCRETE, ACTIVE job offers, not just search portal pages.\n"
@@ -54,14 +58,18 @@ class ScoutAgent:
         
         all_found_jobs: List[JobOffer] = []
         
-        for _ in range(3): # max 3 iterations
+        logger.info("Starting LLM interaction loop for searching and scraping.")
+        for i in range(3): # max 3 iterations
+            logger.debug(f"LLM interaction loop iteration {i + 1}")
             response = self.llm.invoke(messages)
             messages.append(response)
             
             if not response.tool_calls:
+                logger.debug("No tool calls made by the LLM. Exiting loop.")
                 break
                 
             for tool_call in response.tool_calls:
+                logger.debug(f"Executing tool: {tool_call['name']}")
                 if tool_call["name"] == "job_search_tool":
                     raw_results = job_search_tool.invoke(tool_call["args"])
                     messages.append(
@@ -81,6 +89,7 @@ class ScoutAgent:
                         )
                     )
 
+        logger.info("Parsing found jobs from LLM messages.")
         # After the loop, the collected tool responses should contain the job details.
         raw_text_to_parse = ""
         for msg in messages:
@@ -91,14 +100,17 @@ class ScoutAgent:
 
         if raw_text_to_parse:
             all_found_jobs = self.parser.parse(raw_text_to_parse)
+            logger.debug(f"Parsed {len(all_found_jobs)} jobs from messages.")
 
         # Fallback if no tool calls were made or no jobs found
         if not all_found_jobs:
-            print("⚠️ No jobs found through agent loop. Running fallback search...")
+            logger.warning("No jobs found through agent loop. Running fallback search...")
             fallback_query = f"{target_criteria} jobs for someone with: {resume_context[:100]}"
             raw_results = job_search_tool.invoke({"query": fallback_query})
             all_found_jobs = self.parser.parse(str(raw_results))
+            logger.debug(f"Parsed {len(all_found_jobs)} jobs from fallback search.")
 
+        logger.info(f"Scout agent finished. Found {len(all_found_jobs)} jobs.")
         return {
             "found_jobs": all_found_jobs,
             "scout_runs": scout_runs,

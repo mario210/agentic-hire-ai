@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from typing import List
+from typing import List, Tuple
 from src.schema.state import JobOffer
 
 class JobValidator:
@@ -9,9 +9,9 @@ class JobValidator:
     """
     
     @staticmethod
-    def is_job_valid(job: JobOffer) -> bool:
+    def is_job_valid(job: JobOffer) -> Tuple[bool, str]:
         if not job.url or not job.url.startswith("http"):
-            return False
+            return False, "Invalid URL format"
             
         try:
             headers = {
@@ -22,7 +22,7 @@ class JobValidator:
             
             # 1. Check for dead links (404, 500, etc.)
             if response.status_code >= 400:
-                return False
+                return False, f"HTTP Error {response.status_code}"
                 
             # 2. Check page content for signs of expiration
             soup = BeautifulSoup(response.text, "html.parser")
@@ -40,26 +40,29 @@ class JobValidator:
                 "404 not found",
                 "page not found",
                 "not accepting applications",
-                "position closed"
+                "position closed",
+                "sorry, we cannot display this page"
             ]
             
             for phrase in expired_phrases:
                 if phrase in text_content:
-                    return False
+                    return False, f"Found expired phrase: '{phrase}'"
                     
-            return True
+            return True, ""
             
-        except requests.exceptions.RequestException:
+        except requests.exceptions.RequestException as e:
             # If the request fails entirely (timeout, DNS error), it's invalid
-            return False
+            return False, f"Request failed: {str(e)}"
 
     @staticmethod
     def filter_valid_jobs(jobs: List[JobOffer]) -> List[JobOffer]:
         print("🔍 Validating found job URLs to ensure they are active and not expired...")
         valid_jobs = []
         for job in jobs:
-            if JobValidator.is_job_valid(job):
+            is_valid, reason = JobValidator.is_job_valid(job)
+            if is_valid:
                 valid_jobs.append(job)
             else:
-                print(f"   ❌ Dropping dead or expired job link: {job.url}")
+                title = getattr(job, 'title', 'Unknown Title')
+                print(f"   ❌ Dropping dead or expired job link: [{job.url}] {title} - {reason}")
         return valid_jobs

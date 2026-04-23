@@ -1,6 +1,7 @@
 from langchain_core.messages import SystemMessage, HumanMessage
 from src.schema.state import AgenticHireState
 from urllib.parse import urlparse
+from loguru import logger
 
 
 class TailorAgent:
@@ -13,19 +14,21 @@ class TailorAgent:
         self.llm = llm
 
     def __call__(self, state: AgenticHireState) -> dict:
-        print("--- [NODE] EXECUTING TAILOR (CONTENT GENERATION) ---")
+        logger.info("--- [NODE] EXECUTING TAILOR (CONTENT GENERATION) ---")
 
         shortlisted_jobs = state.get("shortlisted_jobs", [])
         resume_context = state.get("resume_context", "")
 
         if not shortlisted_jobs:
-            print("⚠️ No shortlisted jobs found. Tailor has nothing to do.")
+            logger.warning("No shortlisted jobs found. Tailor has nothing to do.")
             return {"status": "Tailor skipped: No jobs to process."}
 
         applications = {}
+        
+        logger.debug(f"Tailoring applications for {len(shortlisted_jobs)} shortlisted jobs.")
 
         for job in shortlisted_jobs:
-            print(f"Generating application materials for: {job.title}...")
+            logger.info(f"Generating application materials for: {job.title} at {job.company}...")
 
             prompt = f"""
             You are a highly critical and skeptical Career Advisor. 
@@ -49,6 +52,7 @@ class TailorAgent:
             """
 
             # Generate the content
+            logger.debug("Requesting LLM to generate tailor analysis...")
             response = self.llm.invoke([
                 SystemMessage(content="You are a highly critical and skeptical Career Advisor."),
                 HumanMessage(content=prompt)
@@ -59,7 +63,8 @@ class TailorAgent:
             if job.url:
                 try:
                     portal = urlparse(job.url).netloc.replace("www.", "")
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Failed to parse URL {job.url}: {e}")
                     pass
 
             founded_job_offer = f"{portal} -> {job.url}\n\n{response.content}"
@@ -69,7 +74,9 @@ class TailorAgent:
                 "job_title": job.title,
                 "company": job.company
             }
+            logger.debug(f"Tailored application generated for {job.id}")
 
+        logger.info(f"Tailor finished. Generated {len(applications)} personalized applications.")
         return {
             "applications": applications,
             "status": f"Tailor generated {len(applications)} personalized applications."

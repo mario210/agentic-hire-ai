@@ -2,6 +2,7 @@ from langgraph.graph import StateGraph, END
 from src.schema.state import AgenticHireState
 from src.agents.agents import factory
 from src.tools.job_validator import JobValidator
+from loguru import logger
 
 # Maximum number of times the scout can run to prevent infinite loops
 MAX_SCOUT_RUNS = 5
@@ -10,43 +11,54 @@ def should_rescout(state: AgenticHireState):
     """
     Conditional logic to decide whether to re-run the scout or proceed.
     """
+    logger.info("Evaluating conditional edge 'should_rescout'")
     valid_jobs = state.get("valid_jobs", [])
     found_jobs = state.get("found_jobs", [])
     max_offers = state.get("max_offers", 5)
     scout_runs = state.get("scout_runs", 0)
     
+    logger.debug(f"State variables - valid_jobs count: {len(valid_jobs)}, found_jobs count: {len(found_jobs)}, scout_runs: {scout_runs}/{MAX_SCOUT_RUNS}")
+    
     if scout_runs >= MAX_SCOUT_RUNS:
-        print("⚠️ Max scout runs reached. Proceeding with available jobs.")
+        logger.warning("Max scout runs reached. Proceeding with available jobs.")
         return "proceed"
         
     if len(valid_jobs) >= max_offers:
+        logger.info(f"Target of {max_offers} valid jobs reached (currently {len(valid_jobs)}). Proceeding.")
         return "proceed"
         
     if not found_jobs and scout_runs > 0:
         # If we've already tried and still have nothing, stop.
+        logger.warning("No jobs found in the previous scout run. Stopping to prevent infinite loops.")
         return "end"
         
+    logger.info("Requirements not met, deciding to 'rescout'")
     return "rescout"
 
 def validate_and_limit_jobs_node(state: AgenticHireState) -> dict:
     """
     Node to filter out invalid or expired job offers and limit the number.
     """
-    print("--- [NODE] EXECUTING JOB VALIDATION ---")
+    logger.info("--- [NODE] EXECUTING JOB VALIDATION ---")
     found_jobs = state.get("found_jobs", [])
     max_offers = state.get("max_offers", 5)
     
+    logger.debug(f"Validating {len(found_jobs)} found jobs")
     # We only want to keep valid jobs
     valid_jobs = [job for job in found_jobs if JobValidator.is_job_valid(job)]
     
+    logger.debug(f"Found {len(valid_jobs)} valid jobs out of {len(found_jobs)}")
+    
     # Limit the number of jobs to the configured maximum
     limited_jobs = valid_jobs[:max_offers]
+    logger.debug(f"Limited jobs to {len(limited_jobs)} (max_offers={max_offers})")
     
     return {"valid_jobs": limited_jobs, "status": f"Validated and limited to {len(limited_jobs)} jobs."}
 
 
 def build_graph():
     # 2. Initialize the Graph with our State schema
+    logger.debug("Building LangGraph workflow")
     workflow = StateGraph(AgenticHireState)
 
     # 3. Add Nodes (The Workers)

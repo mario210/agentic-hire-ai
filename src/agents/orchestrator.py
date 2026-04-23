@@ -1,6 +1,7 @@
 from src.schema.state import AgenticHireState, JobOffer
 from src.tools.vectordb import CVVectorManager
 from pydantic import BaseModel, Field
+from loguru import logger
 
 class MatchRating(BaseModel):
     """Structured output for the matching logic."""
@@ -22,22 +23,26 @@ class OrchestratorAgent:
         self.judge = self.llm.with_structured_output(MatchRating)
 
     def __call__(self, state: AgenticHireState) -> dict:
-        print("--- [NODE] EXECUTING ORCHESTRATOR (MATCHMAKER) ---")
+        logger.info("--- [NODE] EXECUTING ORCHESTRATOR (MATCHMAKER) ---")
 
         valid_jobs = state.get("valid_jobs", [])
         shortlisted_jobs = []
 
         if not valid_jobs:
-            print("⚠️ No valid jobs found to analyze.")
+            logger.warning("No valid jobs found to analyze.")
             return {"status": "Orchestrator skipped: No valid jobs found."}
 
+        logger.debug(f"Orchestrator evaluating {len(valid_jobs)} valid jobs.")
+
         for job in valid_jobs:
-            print(f"Analyzing: {job.title} at {job.company}...")
+            logger.info(f"Analyzing job match: {job.title} at {job.company}...")
 
             # 1. RAG Step: Get specific context from CV for THIS job
             # We search for the job title and description in our vectors
             search_query = f"{job.title} {job.description[:200]}"
             relevant_cv_parts = self.vector_manager.get_context(search_query, k=3)
+            
+            logger.debug(f"RAG retrieved context length: {len(relevant_cv_parts)}")
 
             # 2. Evaluation Step: Compare Job vs. CV Evidence
             prompt = f"""
@@ -60,6 +65,7 @@ class OrchestratorAgent:
             Don't penalize if 'Remote' isn't on the CV if the tech skills are a 100% match.
             """
 
+            logger.debug("Requesting LLM match rating evaluation...")
             rating = self.judge.invoke(prompt)
 
             # 3. Decision Step: Add to shortlist if it's a strong match
@@ -67,12 +73,16 @@ class OrchestratorAgent:
                 job.match_score = rating.score
                 job.analysis = rating.reasoning
                 shortlisted_jobs.append(job)
-                print(f"✅ Match found! Score: {rating.score}")
+                logger.info(f"✅ Match accepted! Score: {rating.score}")
+                logger.debug(f"Reasoning: {rating.reasoning}")
             else:
-                print(f"❌ Weak match ({rating.score}). Skipping.")
+                logger.info(f"❌ Match rejected. Score ({rating.score}) below threshold (0.7).")
+                logger.debug(f"Reasoning: {rating.reasoning}")
 
         # Sorting shortlisted jobs by score (descending)
         shortlisted_jobs.sort(key=lambda x: x.match_score, reverse=True)
+        
+        logger.info(f"Orchestrator finished. Shortlisted {len(shortlisted_jobs)} jobs.")
 
         return {
             "shortlisted_jobs": shortlisted_jobs,
