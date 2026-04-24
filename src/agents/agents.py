@@ -3,7 +3,7 @@ from src.agents.orchestrator import OrchestratorAgent
 from src.agents.tailor import TailorAgent
 from src.tools.vectordb import CVVectorManager
 from src.tools.job_validator import JobValidator
-from src.config import config
+from config.app import config
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 

@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, END
 from src.schema.state import AgenticHireState
 from src.agents.agents import factory
-from src.config import config
+from config.app import config
 from loguru import logger
 
 
@@ -17,7 +17,7 @@ def should_rescout(state: AgenticHireState):
     scout_runs = state.get("scout_runs", 0)
 
     logger.debug(
-        f"State variables - found_jobs count: {len(found_jobs)}, valid_jobs count: {len(valid_jobs)}, rejected_jobs count: {len(rejected_jobs)}, scout_runs: {scout_runs}/{config.max_scout_runs}"
+        f"State variables - found_jobs count: {len(found_jobs)}, valid_jobs count: {len(valid_jobs)} | Total rejected jobs: {len(rejected_jobs)} | Scout runs: {scout_runs}/{config.max_scout_runs}"
     )
 
     if scout_runs >= config.max_scout_runs:

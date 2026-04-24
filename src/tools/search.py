@@ -1,6 +1,7 @@
 import requests
+from config.app import config
 from langchain_core.tools import tool
-from src.config import config
+from loguru import logger
 
 @tool
 def job_search_tool(query: str) -> str:
@@ -9,6 +10,7 @@ def job_search_tool(query: str) -> str:
     Input should be a specific search query like 'Senior Python Developer jobs London'.
     Returns a string containing a list of search results with titles, snippets, and URLs.
     """
+    logger.debug(f"Search Query: {query}")
     payload = {"query": query, "num_results": 10}
 
     try:

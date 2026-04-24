@@ -1,15 +1,10 @@
 from src.graph import app
 from src.agents.agents import factory
-from src.config import config
+from config.logging import setup_logging
+from config.app import config
 from loguru import logger
-import sys
 
-# Configure loguru
-logger.remove()
-logger.add(
-    sys.stdout,
-    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
-)
+setup_logging(debug=config.debug_mode)
 
 def main():
     logger.info("Starting main process.")

@@ -17,7 +17,7 @@ class AgenticHireConfig(BaseSettings):
 
     # Initial prompt for job search
     initial_prompt: str = (
-        "Junior-level Python Developer or AI Engineer roles in Poland. "
+        "Junior-level Python Developer or AI Engineer roles. "
         "No Architect, Team Leader or Senior level. "
         "Only consider jobs that are fully remote within Poland or offer hybrid work in Warsaw. "
         "Exclude roles that primarily require Java or non-Python technologies."
@@ -36,6 +36,9 @@ class AgenticHireConfig(BaseSettings):
     openrouter_api_key: Optional[str] = None  # Loaded from env
 
     oriosearch_base_url: str = "http://localhost:8000"
+
+    # Debugging and logging
+    debug_mode: bool = True
 
     model_config = SettingsConfigDict(
         env_file=".env",
