@@ -38,9 +38,12 @@ class ScoutAgent:
 
         # Extract previously evaluated jobs to avoid duplicates on subsequent runs
         evaluated_jobs = state.get("found_jobs", [])
+        rejected_jobs = state.get("rejected_jobs", [])
         evaluated_titles = [
             job.title for job in evaluated_jobs if hasattr(job, "title")
         ]
+        rejected_urls = {job.url for job in rejected_jobs if hasattr(job, "url")}
+        existing_urls = {job.url for job in evaluated_jobs if hasattr(job, "url")}
 
         logger.debug(f"Previously evaluated jobs count: {len(evaluated_titles)}")
 
@@ -49,7 +52,7 @@ class ScoutAgent:
         if scout_runs > 1:
             search_variation = f" This is search attempt #{scout_runs}. Try finding different, more recent, or alternative job postings than before."
             if evaluated_titles:
-                search_variation += f"\nIMPORTANT: Skip these previously evaluated jobs: {', '.join(evaluated_titles)}"
+                search_variation += f"\nIMPORTANT: Skip these previously evaluated jobs: {', '.join(evaluated_titles)}. Also avoid any jobs from these URLs: {', '.join(existing_urls | rejected_urls)}"
                 logger.debug(
                     "Added search variation to avoid previously evaluated jobs."
                 )
@@ -117,6 +120,11 @@ class ScoutAgent:
 
         if raw_text_to_parse:
             all_found_jobs = self.parser.parse(raw_text_to_parse)
+            # Filter out duplicates (already in found_jobs) and explicitly rejected jobs
+            all_found_jobs = [
+                job for job in all_found_jobs
+                if job.url not in existing_urls and job.url not in rejected_urls
+            ]
             logger.debug(f"Parsed {len(all_found_jobs)} jobs from messages.")
 
         # Fallback if no tool calls were made or no jobs found
@@ -129,6 +137,11 @@ class ScoutAgent:
             )
             raw_results = job_search_tool.invoke({"query": fallback_query})
             all_found_jobs = self.parser.parse(str(raw_results))
+            # Apply the same filtering to fallback results
+            all_found_jobs = [
+                job for job in all_found_jobs
+                if job.url not in existing_urls and job.url not in rejected_urls
+            ]
             logger.debug(f"Parsed {len(all_found_jobs)} jobs from fallback search.")
 
         logger.info(f"Scout agent finished. Found {len(all_found_jobs)} jobs.")

@@ -29,6 +29,7 @@ class OrchestratorAgent:
 
         valid_jobs = state.get("valid_jobs", [])
         shortlisted_jobs = []
+        rejected_jobs = []  # New list to track rejections
 
         if not valid_jobs:
             logger.warning("No valid jobs found to analyze.")
@@ -78,6 +79,7 @@ class OrchestratorAgent:
                 logger.info(f"✅ Match accepted! Score: {rating.score}")
                 logger.debug(f"Reasoning: {rating.reasoning}")
             else:
+                rejected_jobs.append(job)  # Add to rejected list
                 logger.info(
                     f"❌ Match rejected. Score ({rating.score}) below threshold (0.7)."
                 )
@@ -90,5 +92,6 @@ class OrchestratorAgent:
 
         return {
             "shortlisted_jobs": shortlisted_jobs,
+            "rejected_jobs": rejected_jobs,
             "status": f"Orchestrator shortlisted {len(shortlisted_jobs)} jobs.",
         }

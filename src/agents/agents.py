@@ -11,10 +11,10 @@ load_dotenv(find_dotenv(usecwd=True))
 
 # --- Global Model Configuration ---
 ORCHESTRATOR_MODEL_NAME = "openai/gpt-4o-mini"
-SCOUT_MODEL_NAME = "google/gemini-3-flash-preview"
+SCOUT_MODEL_NAME = "openai/gpt-4o"
 TAILOR_MODEL_NAME = "openai/gpt-4o-mini"
 VISION_MODEL_NAME = "openai/gpt-4o"
-VALIDATOR_MODEL_NAME = "openai/gpt-4o-mini"
+VALIDATOR_MODEL_NAME = "openai/gpt-4o"
 EMBEDDED_MODEL_NAME = "text-embedding-3-small"
 
 

@@ -17,7 +17,7 @@ MAX_VALID_OFFERS = 5  # The desired number of valid job offers to find
 MAX_SCOUT_RUNS = (
     3  # Safeguard: Stop searching after X runs if unable to find good matches
 )
-
+INITIAL_PROMPT = "Junior-level Python Developer or AI Engineer roles in Poland. Not Architect or Team Leader or Senior level. Positions should focus on Python, artificial intelligence, or machine learning. Only consider jobs that are fully remote within Poland or offer hybrid work in Warsaw. Exclude roles that primarily require Java or non-Python technologies."
 
 def main():
     logger.info("Starting main process.")
@@ -34,7 +34,7 @@ def main():
 
     initial_state = {
         "resume_context": initial_context,
-        "target_criteria": "Junior Python Developer, AI Engineer, Remote, Poland",
+        "target_criteria": INITIAL_PROMPT,
         "found_jobs": [],
         "shortlisted_jobs": [],
         "applications": {},

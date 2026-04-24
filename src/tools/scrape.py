@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from langchain_core.tools import tool
+from loguru import logger
 
 
 @tool
@@ -9,6 +10,7 @@ def scrape_webpage_tool(url: str) -> str:
     Fetches and extracts text content from a webpage URL.
     Use this to read the content of a job portal or a specific job offer page.
     """
+    logger.debug(f"Scrape page {url}")
     try:
         # Use a generic User-Agent to avoid being blocked
         headers = {

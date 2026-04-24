@@ -14,11 +14,12 @@ def should_rescout(state: AgenticHireState):
     logger.info("Evaluating conditional edge 'should_rescout'")
     valid_jobs = state.get("valid_jobs", [])
     found_jobs = state.get("found_jobs", [])
+    rejected_jobs = state.get("rejected_jobs", [])
     max_offers = state.get("max_offers", 5)
     scout_runs = state.get("scout_runs", 0)
 
     logger.debug(
-        f"State variables - valid_jobs count: {len(valid_jobs)}, found_jobs count: {len(found_jobs)}, scout_runs: {scout_runs}/{MAX_SCOUT_RUNS}"
+        f"State variables - found_jobs count: {len(found_jobs)}, valid_jobs count: {len(valid_jobs)}, rejected_jobs count: {len(rejected_jobs)}, scout_runs: {scout_runs}/{MAX_SCOUT_RUNS}"
     )
 
     if scout_runs >= MAX_SCOUT_RUNS:
@@ -53,10 +54,13 @@ def validate_and_limit_jobs_node(state: AgenticHireState) -> dict:
     logger.debug(f"Validating {len(found_jobs)} found jobs")
     
     validated_jobs_with_status = []
+    rejected_jobs = []  # New list for invalid jobs
     for job in found_jobs:
         is_valid = factory.job_validator.is_job_valid(job)
         if is_valid:
             validated_jobs_with_status.append(job)
+        else:
+            rejected_jobs.append(job)  # Track as rejected
 
     valid_jobs = validated_jobs_with_status
 
@@ -68,6 +72,7 @@ def validate_and_limit_jobs_node(state: AgenticHireState) -> dict:
 
     return {
         "valid_jobs": limited_jobs,
+        "rejected_jobs": rejected_jobs,  # Include in state (appends via annotation)
         "status": f"Validated and limited to {len(limited_jobs)} jobs.",
     }
 

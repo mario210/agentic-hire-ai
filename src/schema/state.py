@@ -62,3 +62,6 @@ class AgenticHireState(TypedDict, total=False):
 
     # Track how many times the scout has run to prevent infinite loops
     scout_runs: int
+
+    # Jobs that were found but rejected (e.g., low match score, expired, or invalid)
+    rejected_jobs: Annotated[List[JobOffer], operator.add]
