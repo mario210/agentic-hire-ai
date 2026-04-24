@@ -51,8 +51,14 @@ def validate_and_limit_jobs_node(state: AgenticHireState) -> dict:
     max_offers = state.get("max_offers", 5)
 
     logger.debug(f"Validating {len(found_jobs)} found jobs")
-    # We only want to keep valid jobs using the configured JobValidator
-    valid_jobs = [job for job in found_jobs if factory.job_validator.is_job_valid(job)]
+    
+    validated_jobs_with_status = []
+    for job in found_jobs:
+        is_valid = factory.job_validator.is_job_valid(job)
+        if is_valid:
+            validated_jobs_with_status.append(job)
+
+    valid_jobs = validated_jobs_with_status
 
     logger.debug(f"Found {len(valid_jobs)} valid jobs out of {len(found_jobs)}")
 

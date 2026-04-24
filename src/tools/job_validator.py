@@ -1,6 +1,5 @@
 import requests
 from bs4 import BeautifulSoup
-from typing import List, Tuple
 from src.schema.state import JobOffer
 from pydantic import BaseModel, Field
 from loguru import logger
@@ -26,10 +25,10 @@ class JobValidator:
         """
         self.checker = llm.with_structured_output(ExpirationCheck)
 
-    def is_job_valid(self, job: JobOffer) -> Tuple[bool, str]:
+    def is_job_valid(self, job: JobOffer) -> bool:
         if not job.url or job.url == "N/A" or not job.url.startswith("http"):
             logger.warning(f"Invalid URL format for job '{job.title}': {job.url}")
-            return False, "Invalid URL format"
+            return False
 
         try:
             logger.info(f"Validating job '{job.title}' at URL: {job.url}")
@@ -44,7 +43,7 @@ class JobValidator:
                 logger.warning(
                     f"HTTP Error {response.status_code} when accessing {job.url}"
                 )
-                return False, f"HTTP Error {response.status_code}"
+                return False
 
             # 2. Check page content for signs of expiration using an LLM
             soup = BeautifulSoup(response.text, "html.parser")
@@ -76,31 +75,15 @@ class JobValidator:
                 logger.info(
                     f"Job '{job.title}' is expired/inactive. Reason: {result.reason}"
                 )
-                return False, result.reason
+                return False
 
             logger.info(f"Job '{job.title}' is active.")
-            return True, ""
+            return True
 
         except requests.exceptions.RequestException as e:
             # If the request fails entirely (timeout, DNS error), it's invalid
             logger.error(f"Request failed for {job.url}: {str(e)}")
-            return False, f"Request failed: {str(e)}"
+            return False
         except Exception as e:
             logger.error(f"Validation error for {job.url}: {str(e)}")
-            return False, f"Validation error: {str(e)}"
-
-    def filter_valid_jobs(self, jobs: List[JobOffer]) -> List[JobOffer]:
-        logger.info(
-            "🔍 Validating found job URLs to ensure they are active and not expired..."
-        )
-        valid_jobs = []
-        for job in jobs:
-            is_valid, reason = self.is_job_valid(job)
-            if is_valid:
-                valid_jobs.append(job)
-            else:
-                title = getattr(job, "title", "Unknown Title")
-                logger.info(
-                    f"❌ Dropping dead or expired job link: [{job.url}] {title} - {reason}"
-                )
-        return valid_jobs
+            return False
