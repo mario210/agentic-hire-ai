@@ -1,10 +1,8 @@
 from langgraph.graph import StateGraph, END
 from src.schema.state import AgenticHireState
 from src.agents.agents import factory
+from src.config import config
 from loguru import logger
-
-# Maximum number of times the scout can run to prevent infinite loops
-MAX_SCOUT_RUNS = 5
 
 
 def should_rescout(state: AgenticHireState):
@@ -19,10 +17,10 @@ def should_rescout(state: AgenticHireState):
     scout_runs = state.get("scout_runs", 0)
 
     logger.debug(
-        f"State variables - found_jobs count: {len(found_jobs)}, valid_jobs count: {len(valid_jobs)}, rejected_jobs count: {len(rejected_jobs)}, scout_runs: {scout_runs}/{MAX_SCOUT_RUNS}"
+        f"State variables - found_jobs count: {len(found_jobs)}, valid_jobs count: {len(valid_jobs)}, rejected_jobs count: {len(rejected_jobs)}, scout_runs: {scout_runs}/{config.max_scout_runs}"
     )
 
-    if scout_runs >= MAX_SCOUT_RUNS:
+    if scout_runs >= config.max_scout_runs:
         logger.warning("Max scout runs reached. Proceeding with available jobs.")
         return "proceed"
 
@@ -52,7 +50,7 @@ def validate_and_limit_jobs_node(state: AgenticHireState) -> dict:
     max_offers = state.get("max_offers", 5)
 
     logger.debug(f"Validating {len(found_jobs)} found jobs")
-    
+
     validated_jobs_with_status = []
     rejected_jobs = []  # New list for invalid jobs
     for job in found_jobs:

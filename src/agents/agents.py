@@ -3,19 +3,8 @@ from src.agents.orchestrator import OrchestratorAgent
 from src.agents.tailor import TailorAgent
 from src.tools.vectordb import CVVectorManager
 from src.tools.job_validator import JobValidator
-from src import utils
+from src.config import config
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from dotenv import load_dotenv, find_dotenv
-
-load_dotenv(find_dotenv(usecwd=True))
-
-# --- Global Model Configuration ---
-ORCHESTRATOR_MODEL_NAME = "openai/gpt-4o-mini"
-SCOUT_MODEL_NAME = "openai/gpt-4o"
-TAILOR_MODEL_NAME = "openai/gpt-4o-mini"
-VISION_MODEL_NAME = "openai/gpt-4o"
-VALIDATOR_MODEL_NAME = "openai/gpt-4o"
-EMBEDDED_MODEL_NAME = "text-embedding-3-small"
 
 
 class AgentFactory:
@@ -27,34 +16,34 @@ class AgentFactory:
     def __init__(self):
         # Centralized OpenRouter Config
         common_params = {
-            "base_url": "https://openrouter.ai/api/v1",
-            "api_key": utils.get_api_key("OPENROUTER_API_KEY"),
+            "base_url": config.openrouter_base_url,
+            "api_key": config.openrouter_api_key,
         }
 
         # Initialize the shared components
         vision_model = ChatOpenAI(
-            model=VISION_MODEL_NAME, temperature=0, **common_params
+            model=config.vision_model_name, temperature=0, **common_params
         )
 
-        embeddings = OpenAIEmbeddings(model=EMBEDDED_MODEL_NAME, **common_params)
+        embeddings = OpenAIEmbeddings(model=config.embedded_model_name, **common_params)
 
         # Vector manager initialization
         self.vector_manager = CVVectorManager(
             vision_model=vision_model, embeddings=embeddings
         )
 
-        scout_llm = ChatOpenAI(model=SCOUT_MODEL_NAME, temperature=0, **common_params)
+        scout_llm = ChatOpenAI(model=config.scout_model_name, temperature=0, **common_params)
 
         orchestrator_llm = ChatOpenAI(
-            model=ORCHESTRATOR_MODEL_NAME, temperature=0, **common_params
+            model=config.orchestrator_model_name, temperature=0, **common_params
         )
 
         tailor_llm = ChatOpenAI(
-            model=TAILOR_MODEL_NAME, temperature=0.7, **common_params
+            model=config.tailor_model_name, temperature=0.7, **common_params
         )
 
         validator_llm = ChatOpenAI(
-            model=VALIDATOR_MODEL_NAME, temperature=0, **common_params
+            model=config.validator_model_name, temperature=0, **common_params
         )
 
         # Inject them into the agents and tools

@@ -26,6 +26,13 @@ OPENROUTER_API_KEY="YOUR_API_KEY"
 ORIOSEARCH_BASE_URL="http://localhost:8000"
 ```
 
+### 5. Customize Configuration (Optional)
+All system constants (e.g., model names, limits, prompts) are centralized in `src/config.py`. You can override defaults via environment variables (prefixed with `AGENTIC_HIRE_`) or by editing the file directly. For example:
+```
+AGENTIC_HIRE_MAX_VALID_OFFERS=10
+AGENTIC_HIRE_INITIAL_PROMPT="Your custom prompt here"
+```
+
 ---
 
 # 🧠 AgenticHire AI

@@ -1,15 +1,8 @@
-import os
-import utils
+from src.config import config
 from typing import List
-from pydantic import SecretStr, BaseModel
+from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
 from src.schema.state import JobOffer
-
-
-def get_api_key(key: str):
-    """Retrieves the key and securely wraps it."""
-    raw_api_key = os.getenv(key)
-    return SecretStr(raw_api_key) if raw_api_key else None
 
 
 class JobOfferList(BaseModel):
@@ -25,12 +18,12 @@ class JobParser:
     """
 
     def __init__(self, model_name: str = "gpt-4o-mini"):
-        # We use a cheaper/faster model for parsing tasks
+        # Cheaper/faster model for parsing tasks
         self.llm = ChatOpenAI(
             model=model_name,
             temperature=0,
-            base_url="https://openrouter.ai/api/v1",
-            api_key=utils.get_api_key("OPENROUTER_API_KEY"),
+            base_url=config.openrouter_base_url,
+            api_key=config.openrouter_api_key,
         )
 
         self.structured_llm = self.llm.with_structured_output(JobOfferList)

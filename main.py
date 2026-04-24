@@ -1,6 +1,6 @@
-# main.py
 from src.graph import app
 from src.agents.agents import factory
+from src.config import config
 from loguru import logger
 import sys
 
@@ -11,21 +11,13 @@ logger.add(
     format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
 )
 
-# --- Configuration ---
-CV_FILE_PATH = "data/cv/CV.pdf"
-MAX_VALID_OFFERS = 5  # The desired number of valid job offers to find
-MAX_SCOUT_RUNS = (
-    3  # Safeguard: Stop searching after X runs if unable to find good matches
-)
-INITIAL_PROMPT = "Junior-level Python Developer or AI Engineer roles in Poland. Not Architect or Team Leader or Senior level. Positions should focus on Python, artificial intelligence, or machine learning. Only consider jobs that are fully remote within Poland or offer hybrid work in Warsaw. Exclude roles that primarily require Java or non-Python technologies."
-
 def main():
     logger.info("Starting main process.")
 
     # 1. Prepare CV (Run once or when CV changes)
     logger.info("Initializing Vector Manager and ingesting CV...")
     cv_manager = factory.vector_manager
-    cv_manager.ingest_cv(CV_FILE_PATH)
+    cv_manager.ingest_cv(config.cv_file_path)
 
     # 2. Setup initial state
     # We fetch full text for the initial context
@@ -34,18 +26,18 @@ def main():
 
     initial_state = {
         "resume_context": initial_context,
-        "target_criteria": INITIAL_PROMPT,
+        "target_criteria": config.initial_prompt,
         "found_jobs": [],
         "shortlisted_jobs": [],
         "applications": {},
         "status": "Starting AgenticHire AI...",
-        "max_offers": MAX_VALID_OFFERS,
-        "max_scout_runs": MAX_SCOUT_RUNS,
+        "max_offers": config.max_valid_offers,
+        "max_scout_runs": config.max_scout_runs,
         "scout_runs": 0,
     }
 
     logger.debug(
-        f"Initial state setup with target_criteria: '{initial_state['target_criteria']}' and max_offers: {MAX_VALID_OFFERS}"
+        f"Initial state setup with target_criteria: '{initial_state['target_criteria']}' and max_offers: {config.max_valid_offers}"
     )
 
     # 3. Run the Graph

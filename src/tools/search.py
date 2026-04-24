@@ -1,8 +1,6 @@
 import requests
 from langchain_core.tools import tool
-
-ORIO_SEARCH_INSTANCE_URL = "http://localhost:8000/search"
-
+from src.config import config
 
 @tool
 def job_search_tool(query: str) -> str:
@@ -14,7 +12,7 @@ def job_search_tool(query: str) -> str:
     payload = {"query": query, "num_results": 10}
 
     try:
-        response = requests.post(ORIO_SEARCH_INSTANCE_URL, json=payload, timeout=10)
+        response = requests.post(config.oriosearch_base_url, json=payload, timeout=10)
         response.raise_for_status()
 
         # We return the raw string or JSON-like string for the LLM to parse
