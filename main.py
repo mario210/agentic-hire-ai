@@ -4,44 +4,58 @@ from config.logging import setup_logging
 from config.app import config
 from loguru import logger
 
-setup_logging(debug=config.debug_mode)
+def _configure_application():
+    """Configures logging for the application."""
+    setup_logging(debug=config.debug_mode)
+    logger.info("Application logging configured.")
 
-def main():
-    logger.info("Starting main process.")
-
-    # 1. Prepare CV (Run once or when CV changes)
+def _prepare_cv_data(cv_file_path: str):
+    """Initializes the Vector Manager and ingests the CV."""
     logger.info("Initializing Vector Manager and ingesting CV...")
     cv_manager = factory.vector_manager
-    cv_manager.ingest_cv(config.cv_file_path)
+    try:
+        cv_manager.ingest_cv(cv_file_path)
+        logger.info(f"CV from '{cv_file_path}' ingested successfully.")
+    except FileNotFoundError:
+        logger.error(f"CV file not found at '{cv_file_path}'. Please check the path in config.py.")
+        raise
+    except Exception as e:
+        logger.error(f"Error ingesting CV: {e}")
+        raise
+    return cv_manager
 
-    # 2. Setup initial state
-    # We fetch full text for the initial context
+def _initialize_state(cv_manager, app_config):
+    """Sets up the initial state for the LangGraph application."""
     logger.info("Fetching full resume text for initial context...")
     initial_context = cv_manager.get_full_resume_text()
 
     initial_state = {
         "resume_context": initial_context,
-        "target_criteria": config.initial_prompt,
+        "target_criteria": app_config.initial_prompt,
         "found_jobs": [],
         "shortlisted_jobs": [],
         "applications": {},
         "status": "Starting AgenticHire AI...",
-        "max_offers": config.max_valid_offers,
-        "max_scout_runs": config.max_scout_runs,
+        "max_offers": app_config.max_valid_offers,
+        "max_scout_runs": app_config.max_scout_runs,
         "scout_runs": 0,
     }
 
     logger.debug(
-        f"Initial state setup with target_criteria: '{initial_state['target_criteria']}' and max_offers: {config.max_valid_offers}"
+        f"Initial state setup with target_criteria: '{initial_state['target_criteria']}' and max_offers: {app_config.max_valid_offers}"
     )
+    return initial_state
 
-    # 3. Run the Graph
+def _run_graph(initial_state: dict):
+    """Invokes the LangGraph application with the initial state."""
     print("🚀 AgenticHire AI is starting...")
     logger.info("Invoking LangGraph application...")
     final_state = app.invoke(initial_state)
     logger.info("LangGraph application finished successfully.")
+    return final_state
 
-    # 4. Show Results
+def _display_results(final_state: dict):
+    """Prints a summary of the job search results."""
     print("\n" + "=" * 30)
     print("🎯 JOB SEARCH SUMMARY")
     print("=" * 30)
@@ -50,12 +64,24 @@ def main():
     if not apps:
         print("No applications were generated.")
         logger.warning("No applications were generated in final state.")
+        return
 
     for job_id, content in apps.items():
-        print(f"\n📍 {content['job_title']} at {content['company']}")
+        print(f"\n📍 {content.get('job_title', 'N/A')} at {content.get('company', 'N/A')}")
         if "founded_job_offer" in content:
-            print(f"{content['founded_job_offer'][:500]}...")
+            # Ensure 'founded_job_offer' is a string before slicing
+            offer_text = str(content['founded_job_offer'])
+            print(f"{offer_text[:500]}...")
         print("-" * 20)
+
+def main():
+    _configure_application()
+    logger.info("Starting AgenticHire AI main process.")
+
+    cv_manager = _prepare_cv_data(config.cv_file_path)
+    initial_state = _initialize_state(cv_manager, config)
+    final_state = _run_graph(initial_state)
+    _display_results(final_state)
 
 
 if __name__ == "__main__":
