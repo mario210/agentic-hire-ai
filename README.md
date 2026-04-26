@@ -186,8 +186,8 @@ agentic-hire-ai/
 ├── data/                    # Local storage for source files (PDF resumes) and ChromaDB persistent data.
 ├── src/
 │   ├── config/              # Logic for LangGraph nodes (The "Brains" of the system).
-│   │   ├── config.py        # Core configuration file.
-│   │   └── logging_config.py# Logging configuration file.
+│   │   ├── app.py           # Main application configuration file.
+│   │   └── logging.py       # Logging configuration file.
 │   ├── agents/              # Logic for LangGraph nodes (The "Brains" of the system).
 │   │   ├── agents.py        # Core agent definitions and initialization.
 │   │   ├── orchestrator.py  # Matchmaker logic, decision making, and task planning.
