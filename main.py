@@ -1,7 +1,7 @@
 from src.graph import build_graph
 from src.agents.agents import get_agent_factory
-from config.logging import setup_logging
-from config.settings import config
+from src.config.logging import setup_logging
+from src.config.settings import config
 from loguru import logger
 
 def _configure_application():

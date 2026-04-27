@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, END
 from src.schema.state import AgenticHireState
 from src.agents.agents import get_agent_factory # Import the getter function
-from config.settings import config
+from src.config.settings import config
 from loguru import logger
 
 

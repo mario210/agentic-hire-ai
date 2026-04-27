@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 load_dotenv()
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from src.tools.vectordb import CVVectorManager
-from config.settings import config
+from src.config.settings import config
 
 DB_PATH = "../../data/chroma_db"
 

@@ -1,4 +1,4 @@
-from config.settings import config
+from src.config.settings import config
 from typing import List
 from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
