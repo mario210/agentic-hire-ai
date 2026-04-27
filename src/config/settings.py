@@ -27,7 +27,7 @@ class AppConfig(BaseSettings):
     max_valid_offers: int = Field(3, description="Maximum number of valid job offers to process.")
     max_scout_runs: int = Field(5, description="Maximum number of iterations for the job scout agent.")
     initial_prompt: str = Field(
-        "Junior-level Python Developer or AI Engineer roles. "
+        "Python Developer or AI Engineer roles. "
         "No Architect, Team Leader or Senior level. "
         "Only consider jobs that are fully remote within Poland or offer hybrid work in Warsaw. "
         "Exclude roles that primarily require Java or non-Python technologies."

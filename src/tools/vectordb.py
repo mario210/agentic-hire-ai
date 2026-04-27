@@ -3,7 +3,7 @@ import base64
 import hashlib
 from io import BytesIO
 from typing import List
-
+from typing import Dict, Any, Optional
 # OS Dependencies Check
 try:
     from pdf2image import convert_from_path
@@ -34,16 +34,55 @@ class CVVectorManager:
         self.db_path = db_path
         self.collection_name = collection_name
         self.vision_model = vision_model
-        self.embeddings = embeddings
-        self._vectorstore = None
+        self.embeddings = embeddings # type: ignore
+        self._vectorstore: Optional[Chroma] = None
         self.hash_file_path = os.path.join(self.db_path, "cv_hash.txt")
+        os.makedirs(self.db_path, exist_ok=True) # Ensure the persistence directory exists
 
-    def _init_vectorstore(self):
+    def _init_vectorstore(self) -> Chroma:
+        """
+        Initializes the Chroma client.
+        """
         return Chroma(
             collection_name=self.collection_name,
             embedding_function=self.embeddings,
             persist_directory=self.db_path,
         )
+
+    def _ensure_vectorstore_ready(self):
+        """
+        Ensures the vector store is initialized and contains documents.
+        Raises a RuntimeError if the database is not ready or appears empty
+        when a hash file indicates it should be populated.
+        """
+        if self._vectorstore is None:
+            self._vectorstore = self._init_vectorstore()
+
+        # Check if a hash file exists, which implies a CV was successfully ingested.
+        # If it exists, we expect the vector store to contain documents.
+        if os.path.exists(self.hash_file_path):
+            try:
+                collection_data: Dict[str, Any] = self._vectorstore.get()
+                if not collection_data or not collection_data.get("documents"):
+                    raise RuntimeError(
+                        f"Vector database at '{self.db_path}' is empty or corrupted, "
+                        "but a CV hash file exists. "
+                        "Please ensure the CV is correctly ingested. "
+                        "You might need to re-run the ingestion process."
+                    )
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to access or verify vector database at '{self.db_path}'. "
+                    f"It might be corrupted or inaccessible. Error: {e}. "
+                    "Please check the database path and ensure the CV is ingested."
+                )
+        else:
+            # If no hash file exists, it means ingest_cv was never successfully called.
+            # In this case, the vector store should not be used.
+            raise RuntimeError(
+                "CV has not been ingested into the vector database. "
+                "Please call 'ingest_cv()' first to process the resume."
+            )
 
     @staticmethod
     def _calculate_file_hash(file_path: str) -> str:
@@ -146,6 +185,12 @@ class CVVectorManager:
         )
         chunks = text_splitter.split_text(full_reconstructed_text)
 
+        if not chunks:
+            raise RuntimeError(
+                f"No text chunks could be generated from CV '{file_path}'. "
+                "The CV might be empty or unreadable."
+            )
+
         # 4. Create Vector Store
         self._vectorstore = Chroma.from_texts(
             texts=chunks,
@@ -164,14 +209,14 @@ class CVVectorManager:
         )
 
     def get_context(self, query: str, k: int = 4) -> str:
-        if self._vectorstore is None:
-            self._vectorstore = self._init_vectorstore()
+        self._ensure_vectorstore_ready()
         docs = self._vectorstore.similarity_search(query, k=k)
         return "\n---\n".join([doc.page_content for doc in docs])
 
     def get_full_resume_text(self) -> str:
-        if self._vectorstore is None:
-            self._vectorstore = self._init_vectorstore()
-
+        self._ensure_vectorstore_ready()
         all_docs = self._vectorstore.get()
+        if not all_docs or not all_docs.get("documents"):
+            # This case should ideally be caught by _ensure_vectorstore_ready, but as a fallback
+            raise RuntimeError("No documents found in the vector database after readiness check.")
         return "\n".join(all_docs["documents"])
