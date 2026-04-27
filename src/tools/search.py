@@ -1,5 +1,5 @@
 import requests
-from config.app import config
+from config.settings import config
 from langchain_core.tools import tool
 from loguru import logger
 

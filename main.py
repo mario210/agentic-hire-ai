@@ -1,13 +1,12 @@
 from src.graph import build_graph
 from src.agents.agents import get_agent_factory
 from config.logging import setup_logging
-from config.app import config
+from config.settings import config
 from loguru import logger
 
 def _configure_application():
     """Configures logging for the application."""
     setup_logging(debug=config.debug_mode)
-    logger.info("Application logging configured.")
 
 def _prepare_cv_data(cv_file_path: str, factory_instance):
     """Initializes the Vector Manager and ingests the CV."""

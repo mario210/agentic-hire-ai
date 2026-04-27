@@ -1,40 +1,3 @@
-## Getting Started
-
-This project uses [uv](https://github.com/astral-sh/uv) for blazing-fast Python dependency and environment management.
-
-### 1. Install `uv`
-If you do not have `uv` installed, you can install it globally via pip:
-```bash
-pip install uv
-```
-*(Alternatively, use the standalone installer from their official documentation).*
-
-### 2. Sync the Environment
-Once cloned, navigate to the project directory and run:
-```bash
-uv sync
-```
-This command will automatically create a virtual environment (`.venv`) and install all required dependencies listed in the `pyproject.toml` and `uv.lock` files.
-
-### 3. Install `OrioSearch`
-Check how-to: https://www.oriosearch.org
-
-### 4. Create `.env` file
-Create a .env file in the root directory of the project and store your configuration and API keys there:
-```
-OPENROUTER_API_KEY="YOUR_API_KEY"
-ORIOSEARCH_BASE_URL="http://localhost:8000"
-```
-
-### 5. Customize Configuration (Optional)
-All system constants (e.g., model names, limits, prompts) are centralized in `src/config.py`. You can override defaults via environment variables (prefixed with `AGENTIC_HIRE_`) or by editing the file directly. For example:
-```
-AGENTIC_HIRE_MAX_VALID_OFFERS=10
-AGENTIC_HIRE_INITIAL_PROMPT="Your custom prompt here"
-```
-
----
-
 # 🧠 AgenticHire AI
 
 An AI-powered agent system that autonomously searches, validates, evaluates, and tailors job applications using a multi-agent LangGraph architecture combined with RAG and Vision-based CV understanding.
@@ -186,7 +149,7 @@ agentic-hire-ai/
 ├── data/                    # Local storage for source files (PDF resumes) and ChromaDB persistent data.
 ├── src/
 │   ├── config/              # Logic for LangGraph nodes (The "Brains" of the system).
-│   │   ├── app.py           # Main application configuration file.
+│   │   ├── settings.py      # Main application configuration file.
 │   │   └── logging.py       # Logging configuration file.
 │   ├── agents/              # Logic for LangGraph nodes (The "Brains" of the system).
 │   │   ├── agents.py        # Core agent definitions and initialization.
@@ -206,3 +169,41 @@ agentic-hire-ai/
 ├── .env                     # Environment variables and API keys (OpenAI, Anthropic, etc.).
 └── main.py                  # Main entry point for the CLI application.
 ```
+
+---
+
+## Getting Started
+
+This project uses [uv](https://github.com/astral-sh/uv) for blazing-fast Python dependency and environment management.
+
+### 1. Install `uv`
+If you do not have `uv` installed, you can install it globally via pip:
+```bash
+pip install uv
+```
+*(Alternatively, use the standalone installer from their official documentation).*
+
+### 2. Sync the Environment
+Once cloned, navigate to the project directory and run:
+```bash
+uv sync
+```
+This command will automatically create a virtual environment (`.venv`) and install all required dependencies listed in the `pyproject.toml` and `uv.lock` files.
+
+### 3. Install `OrioSearch`
+Check how-to: https://www.oriosearch.org
+
+### 4. Create `.env` file
+Create a .env file in the root directory of the project and store your configuration and API keys there:
+```
+OPENROUTER_API_KEY="YOUR_API_KEY"
+ORIOSEARCH_BASE_URL="http://localhost:8000"
+```
+
+### 5. Customize Configuration (Optional)
+All system constants (e.g., model names, limits, prompts) are centralized in `src/config.py`. You can override defaults via environment variables (prefixed with `AGENTIC_HIRE_`) or by editing the file directly. For example:
+```
+AGENTIC_HIRE_MAX_VALID_OFFERS=10
+AGENTIC_HIRE_INITIAL_PROMPT="Your custom prompt here"
+```
+
