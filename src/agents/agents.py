@@ -55,5 +55,8 @@ class AgentFactory:
         self.job_validator = JobValidator(llm=validator_llm)
 
 
-# Single instance to be used across the app
-factory = AgentFactory()
+# Function to get an AgentFactory instance.
+# This allows for lazy initialization and easier mocking in tests.
+def get_agent_factory():
+    """Returns a new instance of AgentFactory."""
+    return AgentFactory()

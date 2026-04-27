@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph, END
 from src.schema.state import AgenticHireState
-from src.agents.agents import factory
+from src.agents.agents import get_agent_factory # Import the getter function
 from config.app import config
 from loguru import logger
 
@@ -45,6 +45,7 @@ def validate_and_limit_jobs_node(state: AgenticHireState) -> dict:
     """
     Node to filter out invalid or expired job offers and limit the number.
     """
+    factory = get_agent_factory()
     logger.info("--- [NODE] EXECUTING JOB VALIDATION ---")
     found_jobs = state.get("found_jobs", [])
     max_offers = state.get("max_offers", 5)
@@ -76,6 +77,7 @@ def validate_and_limit_jobs_node(state: AgenticHireState) -> dict:
 
 
 def build_graph():
+    factory = get_agent_factory()
     # 2. Initialize the Graph with our State schema
     logger.debug("Building LangGraph workflow")
     workflow = StateGraph(AgenticHireState)
@@ -85,7 +87,7 @@ def build_graph():
     workflow.add_node("validate_jobs", validate_and_limit_jobs_node)
     workflow.add_node("orchestrator", factory.orchestrator)
     workflow.add_node("tailor", factory.tailor)
-
+    
     # 4. Set the Entry Point
     workflow.set_entry_point("scout")
 
@@ -108,5 +110,3 @@ def build_graph():
     # 6. Compile the graph
     return workflow.compile()
 
-
-app = build_graph()

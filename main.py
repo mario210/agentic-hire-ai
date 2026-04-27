@@ -1,5 +1,5 @@
-from src.graph import app
-from src.agents.agents import factory
+from src.graph import build_graph
+from src.agents.agents import get_agent_factory
 from config.logging import setup_logging
 from config.app import config
 from loguru import logger
@@ -9,10 +9,10 @@ def _configure_application():
     setup_logging(debug=config.debug_mode)
     logger.info("Application logging configured.")
 
-def _prepare_cv_data(cv_file_path: str):
+def _prepare_cv_data(cv_file_path: str, factory_instance):
     """Initializes the Vector Manager and ingests the CV."""
     logger.info("Initializing Vector Manager and ingesting CV...")
-    cv_manager = factory.vector_manager
+    cv_manager = factory_instance.vector_manager
     try:
         cv_manager.ingest_cv(cv_file_path)
         logger.info(f"CV from '{cv_file_path}' ingested successfully.")
@@ -46,11 +46,11 @@ def _initialize_state(cv_manager, app_config):
     )
     return initial_state
 
-def _run_graph(initial_state: dict):
+def _run_graph(initial_state: dict, app_instance):
     """Invokes the LangGraph application with the initial state."""
     print("🚀 AgenticHire AI is starting...")
     logger.info("Invoking LangGraph application...")
-    final_state = app.invoke(initial_state)
+    final_state = app_instance.invoke(initial_state)
     logger.info("LangGraph application finished successfully.")
     return final_state
 
@@ -78,9 +78,13 @@ def main():
     _configure_application()
     logger.info("Starting AgenticHire AI main process.")
 
-    cv_manager = _prepare_cv_data(config.cv_file_path)
+    # Get the factory and build the graph
+    factory_instance = get_agent_factory()
+    app_instance = build_graph()
+
+    cv_manager = _prepare_cv_data(config.cv_file_path, factory_instance)
     initial_state = _initialize_state(cv_manager, config)
-    final_state = _run_graph(initial_state)
+    final_state = _run_graph(initial_state, app_instance)
     _display_results(final_state)
 
 
