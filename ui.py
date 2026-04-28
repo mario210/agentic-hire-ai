@@ -15,7 +15,7 @@ from src.graph import build_graph
 
 
 # --- PAGE CONFIG ---
-st.set_page_config(layout="wide", page_title="Orbitron AI")
+st.set_page_config(layout="wide", page_title="AGENTIC HIRE AI")
 
 
 # --- STATE ---
@@ -151,6 +151,9 @@ def render_terminal(placeholder, logs):
                     flex-shrink: 0;
                     border: 1px solid rgba(29, 233, 182, 0.3);
                     border-radius: 4px;
+                    width: 100px;
+                    height: 100px;
+                    object-fit: cover;
                 }
 
                 .log-entry {
@@ -168,12 +171,61 @@ def render_terminal(placeholder, logs):
                     font-family: 'Courier New', monospace; 
                     font-size: 0.9rem;
                     margin-bottom: 4px;
+                    display: inline-block;
+                    width: 160px;
+                    min-width: 160px;
+                    height: 24px;
+                    flex-shrink: 0;
                 }
 
                 .msg-content { 
                     color: #C0D6E4; 
                     font-family: monospace; 
                     font-size: 0.95rem;
+                    word-break: break-word;
+                }
+
+                /* SCOUT, TAILOR, ORCHESTRATOR (Blue) */
+                .log-entry.scout,
+                .log-entry.tailor,
+                .log-entry.orchestrator {
+                    background: rgba(3, 169, 244, 0.07);
+                    border-left-color: #03A9F4;
+                }
+                .log-entry.scout .prefix, .log-entry.scout .msg-content,
+                .log-entry.tailor .prefix, .log-entry.tailor .msg-content,
+                .log-entry.orchestrator .prefix, .log-entry.orchestrator .msg-content {
+                    color: #03A9F4;
+                }
+
+                /* SYSTEM (Green) */
+                .log-entry.system {
+                    background: rgba(29, 233, 182, 0.07);
+                    border-left-color: #1de9b6;
+                }
+                .log-entry.system .prefix,
+                .log-entry.system .msg-content {
+                    color: #1de9b6;
+                }
+
+                /* WARNING (Yellow) - Overrides */
+                .log-entry.WARNING {
+                    background: rgba(255, 193, 7, 0.07) !important;
+                    border-left-color: #ffc107 !important;
+                }
+                .log-entry.WARNING .prefix,
+                .log-entry.WARNING .msg-content {
+                    color: #ffc107 !important;
+                }
+
+                /* ERROR (Red) - Overrides */
+                .log-entry.ERROR {
+                    background: rgba(244, 67, 54, 0.07) !important;
+                    border-left-color: #f44336 !important;
+                }
+                .log-entry.ERROR .prefix,
+                .log-entry.ERROR .msg-content {
+                    color: #f44336 !important;
                 }
                 </style>
                 """,
@@ -184,7 +236,12 @@ def render_terminal(placeholder, logs):
                 st.write("SYSTEM_IDLE: Awaiting Uplink...")
                 return
 
-            for agent, text, img in reversed(logs[-50:]):
+            for log_item in reversed(logs[-50:]):
+                agent = log_item[0]
+                text = log_item[1]
+                img = log_item[2]
+                level = log_item[3] if len(log_item) > 3 else "INFO"
+
                 # Convert image to base64 to use inside raw HTML
                 img_html = ""
                 if img and os.path.exists(img):
@@ -192,13 +249,13 @@ def render_terminal(placeholder, logs):
                         data = base64.b64encode(f.read()).decode()
                         img_html = f'<img src="data:image/png;base64,{data}" width="100" class="terminal-avatar">'
                 else:
-                    img_html = '<div style="width:100px; text-align:center; font-size:40px;">⚙️</div>'
+                    img_html = '<div class="terminal-avatar" style="display:flex; align-items:center; justify-content:center; font-size:40px;">⚙️</div>'
 
                 prefix = {
                     "scout": "[SCOUT]",
                     "tailor": "[TAILOR]",
                     "orchestrator": "[ORCHESTRATOR]",
-                    "system": "⚙ [SYS_MSG]"
+                    "system": "[SYS_MSG]"
                 }.get(agent, "LOG")
 
                 # Single markdown call for the whole row ensures no Streamlit column padding
@@ -206,7 +263,7 @@ def render_terminal(placeholder, logs):
                     f"""
                     <div class="terminal-row">
                         {img_html}
-                        <div class="log-entry">
+                        <div class="log-entry {level} {agent}">
                             <div class="prefix">{prefix}</div>
                             <div class="msg-content">{text}</div>
                         </div>
@@ -225,21 +282,31 @@ class StreamlitLogSink:
     def write(self, message):
         clean = message.strip()
 
+        level = "INFO"
+        if hasattr(message, "record"):
+            level = message.record["level"].name
+        elif "[ERROR]" in clean.upper() or "EXCEPTION" in clean.upper():
+            level = "ERROR"
+        elif "[WARNING]" in clean.upper() or "[WARN]" in clean.upper():
+            level = "WARNING"
+            
+        if level == "CRITICAL":
+            level = "ERROR"
+
         if "[SCOUT]" in clean:
             agent = "scout"
-            img = "ui/images/a.png"
+            img = "ui/images/scout_avatar.png"
         elif "[TAILOR]" in clean:
             agent = "tailor"
-            img = "ui/images/b.png"
+            img = "ui/images/tailor_avatar.png"
         elif "[ORCHESTRATOR]" in clean:
             agent = "orchestrator"
-            img = "ui/images/c.png"
+            img = "ui/images/orch_avatar.png"
         else:
             agent = "system"
-            img = None
+            img = "ui/images/cpu_avatar.png"
 
-        # ❌ NO HTML processing anymore
-        self.log_buffer.append((agent, clean, img))
+        self.log_buffer.append((agent, clean, img, level))
 
         render_terminal(self.placeholder, self.log_buffer)
 
@@ -272,10 +339,11 @@ def streamlit_app():
 
         uploaded_file = st.file_uploader("Upload CV (PDF)", type=["pdf"])
 
-        criteria = st.text_area(
+        st.text_area(
             "Search Parameters:",
             height=120,
-            value="Python Developer or AI Engineer roles"
+            value=f"{config.initial_prompt}",
+            key="criteria"
         )
 
         c1, c2 = st.columns(2)
@@ -289,7 +357,7 @@ def streamlit_app():
         if stop:
             st.session_state.cancel_requested = True
             st.session_state.running = False
-            st.session_state.logs.append(("system", "[SYSTEM] Aborted by user.", None))
+            st.session_state.logs.append(("system", "[SYSTEM] Aborted by user.", None, "WARNING"))
             status_placeholder.warning("Process stopped.")
             st.stop()
 
@@ -314,18 +382,17 @@ def streamlit_app():
                     cv_path = tmp.name
 
                 with StreamlitLogSink(terminal_placeholder, st.session_state.logs):
-                    status_placeholder.info("🧠 Agents are running...")
+                    status_placeholder.info("Agents are running...")
 
-                    logger.info("[SYSTEM] Preparing CV...")
                     cv_manager = _prepare_cv_data(cv_path, get_agent_factory())
 
-                    logger.info("[TAILOR] Understanding candidate profile...")
-                    state = _initialize_state(cv_manager, config)
+                    state = _initialize_state(cv_manager, config, user_prompt=st.session_state.criteria)
+                    
+                    # Inject the user's search criteria into the graph state
+                    # (Note: Update "search_parameters" to match your actual LangGraph state schema)
+                    state["search_parameters"] = st.session_state.criteria
 
-                    logger.info("[SCOUT] Exploring job market...")
                     final_state = _run_graph(state, build_graph())
-
-                    logger.info("[ORCHESTRATOR] Finalizing results...")
 
                     st.session_state.final_state = final_state
                     status_placeholder.success("✅ Done")
@@ -352,8 +419,8 @@ def streamlit_app():
             for _, content in apps.items():
                 st.markdown(f"""
                 <div class="glass-panel">
-                    <h3>{content.get('job_title')}</h3>
-                    <p>{content.get('company')}</p>
+                    <h4>{content.get('job_title')} / {content.get('company')}</h4>
+                    <p>{content.get('founded_job_offer')}</p>
                 </div>
                 """, unsafe_allow_html=True)
 

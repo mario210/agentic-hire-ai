@@ -83,7 +83,7 @@ class ScoutAgent:
 
         all_found_jobs: List[JobOffer] = []
 
-        logger.info("Starting LLM interaction loop for searching and scraping.")
+        logger.info("[SCOUT] Starting LLM interaction loop for searching and scraping.")
         for i in range(3):  # max 3 iterations
             logger.debug(f"LLM interaction loop iteration {i + 1}")
             response = self.llm.invoke(messages)
@@ -94,7 +94,7 @@ class ScoutAgent:
                 break
 
             for tool_call in response.tool_calls:
-                logger.debug(f"Executing tool: {tool_call['name']}")
+                logger.debug(f"[SCOUT] Executing tool: {tool_call['name']}")
                 if tool_call["name"] == "job_search_tool":
                     raw_results = job_search_tool.invoke(tool_call["args"])
                     messages.append(
@@ -135,7 +135,7 @@ class ScoutAgent:
         # Fallback if no tool calls were made or no jobs found
         if not all_found_jobs:
             logger.warning(
-                "No jobs found through agent loop. Running fallback search..."
+                "[SCOUT] No jobs found through agent loop. Running fallback search..."
             )
             fallback_query = (
                 f"{target_criteria} jobs for someone with: {resume_context[:100]}"
@@ -149,7 +149,7 @@ class ScoutAgent:
             ]
             logger.debug(f"Parsed {len(all_found_jobs)} jobs from fallback search.")
 
-        logger.info(f"Scout agent finished. Found {len(all_found_jobs)} jobs.")
+        logger.info(f"[SCOUT] Found {len(all_found_jobs)} jobs.")
         return {
             "found_jobs": all_found_jobs,
             "scout_runs": scout_runs,

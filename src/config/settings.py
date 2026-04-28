@@ -24,8 +24,8 @@ class AppConfig(BaseSettings):
     oriosearch_base_url: str = Field("http://localhost:8000")
 
     # AgenticHire AI specific settings
-    max_valid_offers: int = Field(3, description="Maximum number of valid job offers to process.")
-    max_scout_runs: int = Field(5, description="Maximum number of iterations for the job scout agent.")
+    max_valid_offers: int = Field(1, description="Maximum number of valid job offers to process.")
+    max_scout_runs: int = Field(1, description="Maximum number of iterations for the job scout agent.")
     initial_prompt: str = Field(
         "Python Developer or AI Engineer roles. "
         "No Architect, Team Leader or Senior level. "

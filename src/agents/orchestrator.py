@@ -32,13 +32,13 @@ class OrchestratorAgent:
         rejected_jobs = []  # New list to track rejections
 
         if not valid_jobs:
-            logger.warning("No valid jobs found to analyze.")
+            logger.warning("[ORCHESTRATOR] No valid jobs found to analyze.")
             return {"status": "Orchestrator skipped: No valid jobs found."}
 
         logger.debug(f"Orchestrator evaluating {len(valid_jobs)} valid jobs.")
 
         for job in valid_jobs:
-            logger.info(f"Analyzing job match: {job.title} at {job.company}...")
+            logger.info(f"[ORCHESTRATOR] Analyzing job match: {job.title} at {job.company}...")
 
             # 1. RAG Step: Get specific context from CV for THIS job
             # We search for the job title and description in our vectors
@@ -77,18 +77,18 @@ class OrchestratorAgent:
                 job.analysis = rating.reasoning
                 shortlisted_jobs.append(job)
                 logger.info(f"✅ Match accepted! Score: {rating.score}")
-                logger.debug(f"Reasoning: {rating.reasoning}")
+                logger.info(f"[ORCHESTRATOR] Reasoning: {rating.reasoning}")
             else:
                 rejected_jobs.append(job)  # Add to rejected list
                 logger.info(
                     f"❌ Match rejected. Score ({rating.score}) below threshold (0.7)."
                 )
-                logger.debug(f"Reasoning: {rating.reasoning}")
+                logger.debug(f"[ORCHESTRATOR] Reasoning: {rating.reasoning}")
 
         # Sorting shortlisted jobs by score (descending)
         shortlisted_jobs.sort(key=lambda x: x.match_score, reverse=True)
 
-        logger.info(f"Orchestrator finished. Shortlisted {len(shortlisted_jobs)} jobs.")
+        logger.info(f"[ORCHESTRATOR] Shortlisted {len(shortlisted_jobs)} jobs.")
 
         return {
             "shortlisted_jobs": shortlisted_jobs,

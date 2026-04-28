@@ -20,7 +20,7 @@ class TailorAgent:
         resume_context = state.get("resume_context", "")
 
         if not shortlisted_jobs:
-            logger.warning("No shortlisted jobs found. Tailor has nothing to do.")
+            logger.warning("[TAILOR] No shortlisted jobs found. Tailor has nothing to do.")
             return {"status": "Tailor skipped: No jobs to process."}
 
         applications = {}
@@ -31,7 +31,7 @@ class TailorAgent:
 
         for job in shortlisted_jobs:
             logger.info(
-                f"Generating application materials for: {job.title} at {job.company}..."
+                f"[TAILOR] Generating application materials for: {job.title} at {job.company}..."
             )
 
             prompt = f"""
@@ -82,10 +82,11 @@ class TailorAgent:
                 "job_title": job.title,
                 "company": job.company,
             }
+            logger.info(f"[TAILOR] {founded_job_offer}")
             logger.debug(f"Tailored application generated for {job.id}")
 
         logger.info(
-            f"Tailor finished. Generated {len(applications)} personalized applications."
+            f"[TAILOR] Generated {len(applications)} personalized applications."
         )
         return {
             "applications": applications,

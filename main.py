@@ -1,3 +1,5 @@
+from langchain_classic.agents.agent_toolkits.powerbi import prompt
+
 from src.graph import build_graph
 from src.agents.agents import get_agent_factory
 from src.config.logging import setup_logging
@@ -23,14 +25,14 @@ def _prepare_cv_data(cv_file_path: str, factory_instance):
         raise
     return cv_manager
 
-def _initialize_state(cv_manager, app_config):
+def _initialize_state(cv_manager, app_config, user_prompt=config.initial_prompt):
     """Sets up the initial state for the LangGraph application."""
     logger.info("Fetching full resume text for initial context...")
     initial_context = cv_manager.get_full_resume_text()
 
     initial_state = {
         "resume_context": initial_context,
-        "target_criteria": app_config.initial_prompt,
+        "target_criteria": user_prompt,
         "found_jobs": [],
         "shortlisted_jobs": [],
         "applications": {},
