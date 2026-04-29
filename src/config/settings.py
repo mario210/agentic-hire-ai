@@ -25,7 +25,7 @@ class AppConfig(BaseSettings):
 
     # AgenticHire AI specific settings
     max_valid_offers: int = Field(1, description="Maximum number of valid job offers to process.")
-    max_scout_runs: int = Field(1, description="Maximum number of iterations for the job scout agent.")
+    max_scout_runs: int = Field(5, description="Maximum number of iterations for the job scout agent.")
     initial_prompt: str = Field(
         "Python Developer or AI Engineer roles. "
         "No Architect, Team Leader or Senior level. "

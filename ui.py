@@ -295,16 +295,16 @@ class StreamlitLogSink:
 
         if "[SCOUT]" in clean:
             agent = "scout"
-            img = "ui/images/scout_avatar.png"
+            img = "ui/images/scout_avatar.jpg"
         elif "[TAILOR]" in clean:
             agent = "tailor"
-            img = "ui/images/tailor_avatar.png"
+            img = "ui/images/tailor_avatar.jpg"
         elif "[ORCHESTRATOR]" in clean:
             agent = "orchestrator"
-            img = "ui/images/orch_avatar.png"
+            img = "ui/images/orch_avatar.jpg"
         else:
             agent = "system"
-            img = "ui/images/cpu_avatar.png"
+            img = "ui/images/cpu_avatar.jpg"
 
         self.log_buffer.append((agent, clean, img, level))
 
@@ -326,7 +326,7 @@ class StreamlitLogSink:
 # --- MAIN APP ---
 def streamlit_app():
 
-    img_path = "ui/images/bg.png"
+    img_path = "ui/images/bg.jpg"
     if os.path.exists(img_path):
         inject_layout_css(get_base64_image(img_path))
 

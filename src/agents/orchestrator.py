@@ -72,7 +72,7 @@ class OrchestratorAgent:
             rating = self.judge.invoke(prompt)
 
             # 3. Decision Step: Add to shortlist if it's a strong match
-            if rating.score >= 0.7:
+            if rating.score >= 0.6:
                 job.match_score = rating.score
                 job.analysis = rating.reasoning
                 shortlisted_jobs.append(job)
@@ -81,7 +81,7 @@ class OrchestratorAgent:
             else:
                 rejected_jobs.append(job)  # Add to rejected list
                 logger.info(
-                    f"❌ Match rejected. Score ({rating.score}) below threshold (0.7)."
+                    f"❌ Match rejected. Score ({rating.score}) below threshold (0.6)."
                 )
                 logger.debug(f"[ORCHESTRATOR] Reasoning: {rating.reasoning}")
 

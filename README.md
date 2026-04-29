@@ -2,6 +2,8 @@
 
 An AI-powered agent system that autonomously searches, validates, evaluates, and tailors job applications using a multi-agent LangGraph architecture combined with RAG and Vision-based CV understanding.
 
+![AgenticHire AI UI Example](ui/images/ui_example.jpg)
+
 ---
 
 ## 🔑 Key Features
@@ -63,12 +65,20 @@ Generates final application insights:
 
 ---
 
+### 🖥️ Interactive User Interface (Streamlit)
+Provides a clean, intuitive web interface to:
+- Input search parameters and candidate profiles easily
+- Visualize the agentic workflow and decision-making process
+- Review shortlisted jobs, RAG scores, and tailored application strategies
+
+---
+
 ## 🏗️ Architecture Overview (ASCII)
 ```
 ╔════════════════════════════════════════════════════════════╗
 ║                       ENTRY POINT                          ║
 ╠════════════════════════════════════════════════════════════╣
-║                     main.py (CLI)                          ║
+║           app.py (Streamlit UI)  &  main.py (CLI)          ║
 ╚═══════════════════════════════╦════════════════════════════╝
                                 ║
                                 ▼
@@ -167,6 +177,7 @@ agentic-hire-ai/
 │   ├── graph.py             # The core LangGraph definition, node connections, and compilation.
 │   └── utils.py             # Helper functions (PDF parsing, text formatting, logging).
 ├── .env                     # Environment variables and API keys (OpenAI, Anthropic, etc.).
+├── ui.py                    # Main entry point for the interactive Streamlit UI.
 └── main.py                  # Main entry point for the CLI application.
 ```
 
@@ -207,3 +218,16 @@ AGENTIC_HIRE_MAX_VALID_OFFERS=10
 AGENTIC_HIRE_INITIAL_PROMPT="Your custom prompt here"
 ```
 
+
+### 6. Run the Application
+You can run AgenticHire AI using the interactive user interface or the command line:
+
+Run the Streamlit UI:
+```bash
+uv run streamlit run app.py
+```
+
+Run the CLI:
+```bash
+uv run python main.py
+```
