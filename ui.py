@@ -6,6 +6,7 @@ import base64
 import re
 import functools
 import html
+import time
 
 # --- BACKEND IMPORTS ---
 from main import _prepare_cv_data, _initialize_state, _run_graph
@@ -123,6 +124,85 @@ def inject_layout_css(img_base64):
         color: #1de9b6 !important;
     }}
 
+    /* ===== DYNAMIC TERMINAL ROWS ===== */
+    .terminal-row {{
+        display: flex;
+        align-items: flex-start;
+        gap: 10px; /* Adjust this to 0px if you want them touching */
+        margin-bottom: 15px;
+        width: 100%;
+    }}
+
+    .terminal-avatar {{
+        flex-shrink: 0;
+        border: 1px solid rgba(29, 233, 182, 0.3);
+        border-radius: 4px;
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+    }}
+
+    .log-entry {{
+        background: rgba(29, 233, 182, 0.07);
+        border-left: 4px solid #1de9b6;
+        padding: 12px;
+        border-radius: 0px 8px 8px 0px;
+        flex-grow: 1;
+        min-height: 100px;
+    }}
+
+    .prefix {{ 
+        color: #1de9b6; 
+        font-weight: bold; 
+        font-family: 'Courier New', monospace; 
+        font-size: 0.9rem;
+        margin-bottom: 4px;
+        display: inline-block;
+        width: 160px;
+        min-width: 160px;
+        height: 24px;
+        flex-shrink: 0;
+    }}
+
+    .msg-content {{ 
+        color: #C0D6E4; 
+        font-family: monospace; 
+        font-size: 0.95rem;
+        word-break: break-word;
+    }}
+
+    .log-entry.scout, .log-entry.tailor, .log-entry.orchestrator {{
+        background: rgba(3, 169, 244, 0.07);
+        border-left-color: #03A9F4;
+    }}
+    .log-entry.scout .prefix, .log-entry.scout .msg-content,
+    .log-entry.tailor .prefix, .log-entry.tailor .msg-content,
+    .log-entry.orchestrator .prefix, .log-entry.orchestrator .msg-content {{
+        color: #03A9F4;
+    }}
+
+    .log-entry.system {{
+        background: rgba(29, 233, 182, 0.07);
+        border-left-color: #1de9b6;
+    }}
+    .log-entry.system .prefix, .log-entry.system .msg-content {{
+        color: #1de9b6;
+    }}
+
+    .log-entry.WARNING {{
+        background: rgba(255, 193, 7, 0.07) !important;
+        border-left-color: #ffc107 !important;
+    }}
+    .log-entry.WARNING .prefix, .log-entry.WARNING .msg-content {{
+        color: #ffc107 !important;
+    }}
+    .log-entry.ERROR {{
+        background: rgba(244, 67, 54, 0.07) !important;
+        border-left-color: #f44336 !important;
+    }}
+    .log-entry.ERROR .prefix, .log-entry.ERROR .msg-content {{
+        color: #f44336 !important;
+    }}
     </style>
 
     <div class="bg-img-container">
@@ -136,102 +216,6 @@ def render_terminal(placeholder, logs):
     """Zero-gap terminal using pure HTML/CSS for log rows."""
     with placeholder.container():
         with st.container(height=600, border=True):
-            st.markdown(
-                """
-                <style>
-                .terminal-row {
-                    display: flex;
-                    align-items: flex-start;
-                    gap: 10px; /* Adjust this to 0px if you want them touching */
-                    margin-bottom: 15px;
-                    width: 100%;
-                }
-
-                .terminal-avatar {
-                    flex-shrink: 0;
-                    border: 1px solid rgba(29, 233, 182, 0.3);
-                    border-radius: 4px;
-                    width: 100px;
-                    height: 100px;
-                    object-fit: cover;
-                }
-
-                .log-entry {
-                    background: rgba(29, 233, 182, 0.07);
-                    border-left: 4px solid #1de9b6;
-                    padding: 12px;
-                    border-radius: 0px 8px 8px 0px;
-                    flex-grow: 1;
-                    min-height: 100px;
-                }
-
-                .prefix { 
-                    color: #1de9b6; 
-                    font-weight: bold; 
-                    font-family: 'Courier New', monospace; 
-                    font-size: 0.9rem;
-                    margin-bottom: 4px;
-                    display: inline-block;
-                    width: 160px;
-                    min-width: 160px;
-                    height: 24px;
-                    flex-shrink: 0;
-                }
-
-                .msg-content { 
-                    color: #C0D6E4; 
-                    font-family: monospace; 
-                    font-size: 0.95rem;
-                    word-break: break-word;
-                }
-
-                /* SCOUT, TAILOR, ORCHESTRATOR (Blue) */
-                .log-entry.scout,
-                .log-entry.tailor,
-                .log-entry.orchestrator {
-                    background: rgba(3, 169, 244, 0.07);
-                    border-left-color: #03A9F4;
-                }
-                .log-entry.scout .prefix, .log-entry.scout .msg-content,
-                .log-entry.tailor .prefix, .log-entry.tailor .msg-content,
-                .log-entry.orchestrator .prefix, .log-entry.orchestrator .msg-content {
-                    color: #03A9F4;
-                }
-
-                /* SYSTEM (Green) */
-                .log-entry.system {
-                    background: rgba(29, 233, 182, 0.07);
-                    border-left-color: #1de9b6;
-                }
-                .log-entry.system .prefix,
-                .log-entry.system .msg-content {
-                    color: #1de9b6;
-                }
-
-                /* WARNING (Yellow) - Overrides */
-                .log-entry.WARNING {
-                    background: rgba(255, 193, 7, 0.07) !important;
-                    border-left-color: #ffc107 !important;
-                }
-                .log-entry.WARNING .prefix,
-                .log-entry.WARNING .msg-content {
-                    color: #ffc107 !important;
-                }
-
-                /* ERROR (Red) - Overrides */
-                .log-entry.ERROR {
-                    background: rgba(244, 67, 54, 0.07) !important;
-                    border-left-color: #f44336 !important;
-                }
-                .log-entry.ERROR .prefix,
-                .log-entry.ERROR .msg-content {
-                    color: #f44336 !important;
-                }
-                </style>
-                """,
-                unsafe_allow_html=True
-            )
-
             if not logs:
                 st.write("SYSTEM_IDLE: Awaiting Uplink...")
                 return
@@ -245,9 +229,8 @@ def render_terminal(placeholder, logs):
                 # Convert image to base64 to use inside raw HTML
                 img_html = ""
                 if img and os.path.exists(img):
-                    with open(img, "rb") as f:
-                        data = base64.b64encode(f.read()).decode()
-                        img_html = f'<img src="data:image/png;base64,{data}" width="100" class="terminal-avatar">'
+                    data = get_base64_image(img)
+                    img_html = f'<img src="data:image/png;base64,{data}" width="100" class="terminal-avatar">'
                 else:
                     img_html = '<div class="terminal-avatar" style="display:flex; align-items:center; justify-content:center; font-size:40px;">⚙️</div>'
 
@@ -278,6 +261,7 @@ class StreamlitLogSink:
         self.placeholder = placeholder
         self.log_buffer = log_buffer
         self.handler_id = None
+        self.last_update = 0.0
 
     def write(self, message):
         clean = message.strip()
@@ -308,7 +292,11 @@ class StreamlitLogSink:
 
         self.log_buffer.append((agent, clean, img, level))
 
-        render_terminal(self.placeholder, self.log_buffer)
+        # Throttle UI updates to roughly 2 FPS (every 0.5 seconds)
+        current_time = time.time()
+        if current_time - self.last_update > 0.5:
+            render_terminal(self.placeholder, self.log_buffer)
+            self.last_update = current_time
 
     def __enter__(self):
         self.handler_id = logger.add(
@@ -404,6 +392,9 @@ def streamlit_app():
             finally:
                 if cv_path and os.path.exists(cv_path):
                     os.remove(cv_path)
+                
+                # Guarantee final render of logs even if the last ones were throttled
+                render_terminal(terminal_placeholder, st.session_state.logs)
 
                 st.session_state.running = False
 
