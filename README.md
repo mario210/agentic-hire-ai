@@ -224,7 +224,7 @@ You can run AgenticHire AI using the interactive user interface or the command l
 
 Run the Streamlit UI:
 ```bash
-uv run streamlit run app.py
+uv run streamlit run ui.py
 ```
 
 Run the CLI:

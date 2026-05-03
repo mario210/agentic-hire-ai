@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 from langchain_core.messages import (
     HumanMessage,
@@ -30,45 +31,47 @@ class ScoutAgent:
 
         resume_context = state.get("resume_context", "No resume context provided.")
         # target_criteria is not in the type definition, fallback correctly
-        target_criteria = (
-            state.get("target_criteria", "AI Python Developer roles")
-            if "target_criteria" in state
-            else "AI Python Developer roles"
-        )
+        target_criteria = state.get("target_criteria") or "open job roles matching the candidate's CV"
 
         # Extract previously evaluated jobs to avoid duplicates on subsequent runs
         evaluated_jobs = state.get("found_jobs", [])
         rejected_jobs = state.get("rejected_jobs", [])
-        evaluated_titles = [
-            job.title for job in evaluated_jobs if hasattr(job, "title")
-        ]
-        rejected_urls = {job.url for job in rejected_jobs if hasattr(job, "url")}
-        existing_urls = {job.url for job in evaluated_jobs if hasattr(job, "url")}
 
-        logger.debug(f"Previously evaluated jobs count: {len(evaluated_titles)}")
+        all_prior_jobs = evaluated_jobs + rejected_jobs
+        titles_to_avoid = [
+            job.title for job in all_prior_jobs if hasattr(job, "title") and job.title
+        ]
+        rejected_urls = {job.url.rstrip('/') for job in rejected_jobs if hasattr(job, "url") and job.url}
+        existing_urls = {job.url.rstrip('/') for job in evaluated_jobs if hasattr(job, "url") and job.url}
+        urls_to_avoid = existing_urls | rejected_urls
+
+        logger.debug(f"Previously evaluated jobs count: {len(titles_to_avoid)}")
 
         # Add a slight variation to the prompt on subsequent runs to encourage new results
         search_variation = ""
         if scout_runs > 1:
             search_variation = f" This is search attempt #{scout_runs}. Try finding different, more recent, or alternative job postings than before."
-            if evaluated_titles:
-                search_variation += f"\nIMPORTANT: Skip these previously evaluated jobs: {', '.join(evaluated_titles)}. Also avoid any jobs from these URLs: {', '.join(existing_urls | rejected_urls)}"
+            if titles_to_avoid or urls_to_avoid:
+                search_variation += f"\nIMPORTANT: Skip these previously evaluated/rejected jobs: {', '.join(titles_to_avoid)}. Also avoid any jobs from these URLs: {', '.join(urls_to_avoid)}"
                 logger.debug(
                     "Added search variation to avoid previously evaluated jobs."
                 )
 
+        current_date = datetime.now().strftime("%Y-%m-%d")
+
         system_msg = SystemMessage(
             content=(
                 "You are a professional Recruitment Scout. Your task is to find CONCRETE, ACTIVE job offers, not just search portal pages.\n"
+                f"Today's date is {current_date}. Use this to determine if a job posting is old or expired.\n"
                 "PRIORITY RULES:\n"
                 "1. The “target_criteria” is the PRIMARY source of truth and MUST be strictly followed.\n"
                 "2. The CV is SECONDARY and should be used only to refine relevance (skills, experience level, technologies).\n"
                 "3. If there is any conflict between the CV and target_criteria, ALWAYS follow the target_criteria.\n"
                 "STEPS:\n"
-                "Step 1: Use the 'job_search_tool' to find job portals or specific job openings that match the candidate's CV.\n"
+                "Step 1: Use the 'job_search_tool' to find job portals or specific job openings that match the candidate's CV. IMPORTANT: Do NOT restrict your search queries using 'site:' operators (e.g., site:linkedin.com). Search the broader web to find diverse opportunities across all company career pages and job boards.\n"
                 "Step 2: If the search returns a job portal or a list page, use the 'scrape_webpage_tool' to open that URL and find concrete job postings.\n"
                 "Step 3: IMPORTANT: Check the scraped content of each job offer for signs that it is expired, closed, or no longer accepting applications (e.g., 'offer expired', 'job is closed', 'position filled'). If it is expired, discard it and search for another one.\n"
-                "Step 4: Make sure you return information ONLY about specific, active job offers (title, company, description, concrete job URL)."
+                "Step 4: Once you have identified valid, active jobs, write a comprehensive final message containing the exact Title, Company, FULL Description, and concrete URL for ONLY the approved active jobs. Do not mention or include discarded jobs in this final summary."
                 f"{search_variation}"
             )
         )
@@ -114,21 +117,26 @@ class ScoutAgent:
                         )
                     )
 
+        # Ensure we have a final AI summary if the loop maxed out on tool calls
+        if messages and getattr(messages[-1], "type", "") == "tool":
+            logger.debug("Forcing final LLM summarization after tool executions.")
+            final_response = self.llm.invoke(messages)
+            messages.append(final_response)
+
         logger.info("Parsing found jobs from LLM messages.")
-        # After the loop, the collected tool responses should contain the job details.
+        # Only parse the AI's evaluated summaries to prevent parsing raw candidate CVs or discarded/expired scraped text
         raw_text_to_parse = ""
         for msg in messages:
-            if isinstance(msg, ToolMessage):
-                raw_text_to_parse += msg.content + "\n\n"
-            elif hasattr(msg, "content") and msg.content:
-                raw_text_to_parse += msg.content + "\n\n"
+            if getattr(msg, "type", "") == "ai" and not getattr(msg, "tool_calls", []):
+                if hasattr(msg, "content") and msg.content:
+                    raw_text_to_parse += msg.content + "\n\n"
 
         if raw_text_to_parse:
             all_found_jobs = self.parser.parse(raw_text_to_parse)
             # Filter out duplicates (already in found_jobs) and explicitly rejected jobs
             all_found_jobs = [
                 job for job in all_found_jobs
-                if job.url not in existing_urls and job.url not in rejected_urls
+                if not (hasattr(job, "url") and job.url and job.url.rstrip('/') in urls_to_avoid)
             ]
             logger.debug(f"Parsed {len(all_found_jobs)} jobs from messages.")
 
@@ -138,14 +146,14 @@ class ScoutAgent:
                 "[SCOUT] No jobs found through agent loop. Running fallback search..."
             )
             fallback_query = (
-                f"{target_criteria} jobs for someone with: {resume_context[:100]}"
+                f"{target_criteria} active jobs recently posted"
             )
             raw_results = job_search_tool.invoke({"query": fallback_query})
             all_found_jobs = self.parser.parse(str(raw_results))
             # Apply the same filtering to fallback results
             all_found_jobs = [
                 job for job in all_found_jobs
-                if job.url not in existing_urls and job.url not in rejected_urls
+                if not (hasattr(job, "url") and job.url and job.url.rstrip('/') in urls_to_avoid)
             ]
             logger.debug(f"Parsed {len(all_found_jobs)} jobs from fallback search.")
 
