@@ -24,6 +24,11 @@ class JobOffer(BaseModel):
     )
 
 
+def deduplicate_seen_jobs(existing: List[str], new: List[str]) -> List[str]:
+    """Reducer function to maintain a unique list of seen job URLs in the state."""
+    return list(set((existing or []) + (new or [])))
+
+
 class AgenticHireState(TypedDict, total=False):
     """
     The shared state of the LangGraph workflow.
@@ -64,3 +69,6 @@ class AgenticHireState(TypedDict, total=False):
 
     # Jobs that were found but rejected (e.g., low match score, expired, or invalid)
     rejected_jobs: Annotated[List[JobOffer], operator.add]
+
+    # A list of unique job URLs that have been processed across all scouting cycles
+    seen_jobs: Annotated[List[str], deduplicate_seen_jobs]

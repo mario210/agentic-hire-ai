@@ -33,6 +33,9 @@ class ScoutAgent:
         # target_criteria is not in the type definition, fallback correctly
         target_criteria = state.get("target_criteria") or "open job roles matching the candidate's CV"
 
+        # Deduplication state
+        seen_jobs = set(state.get("seen_jobs", []))
+
         # Extract previously evaluated jobs to avoid duplicates on subsequent runs
         evaluated_jobs = state.get("found_jobs", [])
         rejected_jobs = state.get("rejected_jobs", [])
@@ -43,9 +46,9 @@ class ScoutAgent:
         ]
         rejected_urls = {job.url.rstrip('/') for job in rejected_jobs if hasattr(job, "url") and job.url}
         existing_urls = {job.url.rstrip('/') for job in evaluated_jobs if hasattr(job, "url") and job.url}
-        urls_to_avoid = existing_urls | rejected_urls
+        urls_to_avoid = existing_urls | rejected_urls | seen_jobs
 
-        logger.debug(f"Previously evaluated jobs count: {len(titles_to_avoid)}")
+        logger.debug(f"Previously evaluated jobs count: {len(titles_to_avoid)}, seen jobs count: {len(seen_jobs)}")
 
         # Add a slight variation to the prompt on subsequent runs to encourage new results
         search_variation = ""
@@ -133,7 +136,7 @@ class ScoutAgent:
 
         if raw_text_to_parse:
             all_found_jobs = self.parser.parse(raw_text_to_parse)
-            # Filter out duplicates (already in found_jobs) and explicitly rejected jobs
+            # Filter out duplicates (already in found_jobs, rejected jobs, or seen_jobs)
             all_found_jobs = [
                 job for job in all_found_jobs
                 if not (hasattr(job, "url") and job.url and job.url.rstrip('/') in urls_to_avoid)
@@ -157,9 +160,15 @@ class ScoutAgent:
             ]
             logger.debug(f"Parsed {len(all_found_jobs)} jobs from fallback search.")
 
+        # Update seen_jobs with the newly found jobs
+        new_seen = {job.url.rstrip('/') for job in all_found_jobs if hasattr(job, "url") and job.url}
+        if new_seen:
+            seen_jobs.update(new_seen)
+
         logger.info(f"[SCOUT] Found {len(all_found_jobs)} jobs.")
         return {
             "found_jobs": all_found_jobs,
             "scout_runs": scout_runs,
             "status": f"Scouted {len(all_found_jobs)} opportunities.",
+            "seen_jobs": list(seen_jobs),
         }
