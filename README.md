@@ -1,8 +1,27 @@
 # 🧠 AgenticHire AI
 
+![AgenticHire AI UI Example](ui/images/ui_example.jpg)
+
 An AI-powered agent system that autonomously searches, validates, evaluates, and tailors job applications using a multi-agent LangGraph architecture combined with RAG and Vision-based CV understanding.
 
-![AgenticHire AI UI Example](ui/images/ui_example.jpg)
+---
+
+## 🛠️ Tech Stack
+
+The project leverages a modern and robust tech stack to deliver its AI-powered capabilities:
+
+-   **Orchestration:** [LangGraph](https://langchain-ai.github.io/langgraph/) for building stateful, multi-agent applications.
+-   **Programming Language:** Python
+-   **AI/ML:**
+    -   Large Language Models (LLMs) for reasoning, validation, and content generation (e.g., via [OpenRouter](https://openrouter.ai/), OpenAI, Anthropic).
+    -   Vision LLMs for multimodal CV understanding.
+    -   Retrieval-Augmented Generation (RAG) for semantic context.
+-   **Vector Database:** [ChromaDB](https://www.chromadb.com/) for efficient storage and retrieval of embeddings.
+-   **Web Framework:** [Streamlit](https://streamlit.io/) for the interactive user interface.
+-   **Dependency Management:** [uv](https://github.com/astral-sh/uv) for fast and reliable package management.
+-   **External Integrations:**
+    -   [OrioSearch](https://www.oriosearch.org/) for job search APIs.
+    -   Various web scraping and search engine APIs (e.g., Tavily, Google).
 
 ---
 
@@ -230,4 +249,12 @@ uv run streamlit run ui.py
 Run the CLI:
 ```bash
 uv run python main.py
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 ```
