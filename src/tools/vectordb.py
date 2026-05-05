@@ -39,8 +39,8 @@ class CVVectorManager:
         self.hash_file_path = os.path.join(self.db_path, "cv_hash.txt")
         os.makedirs(self.db_path, exist_ok=True)
 
-    def _init_vectorstore(self) -> Chroma:
-        return Chroma(
+    def _init_vectorstore(self) -> None:
+        self._vectorstore = Chroma(
             collection_name=self.collection_name,
             embedding_function=self.embeddings,
             persist_directory=self.db_path,
@@ -48,7 +48,7 @@ class CVVectorManager:
 
     def _ensure_vectorstore_ready(self):
         if self._vectorstore is None:
-            self._vectorstore = self._init_vectorstore()
+            self._init_vectorstore()
 
         if os.path.exists(self.hash_file_path):
             collection_data: Dict[str, Any] = self._vectorstore.get()
@@ -103,7 +103,7 @@ class CVVectorManager:
 
         if new_hash == stored_hash and os.path.exists(self.db_path):
             print("✅ CV unchanged. Using cached embeddings.")
-            self._vectorstore = self._init_vectorstore()
+            self._init_vectorstore()
             return
 
         print("👁️ Reading CV via Vision model...")

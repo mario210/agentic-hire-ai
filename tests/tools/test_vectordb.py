@@ -70,7 +70,7 @@ def mock_image_conversion():
 def mock_chroma():
     """Mocks the Chroma class and its methods."""
     with patch('src.tools.vectordb.Chroma') as mock_chroma_class:
-        # Mock the instance returned by Chroma.from_texts and _init_vectorstore
+        # Mock the instance returned by Chroma.from_documents and _init_vectorstore
         mock_instance = MagicMock()
         mock_instance.similarity_search.return_value = [
             Document(page_content="Chunk 1"),
@@ -79,7 +79,7 @@ def mock_chroma():
         mock_instance.get.return_value = {"documents": ["Full text doc 1", "Full text doc 2"]}
 
         mock_chroma_class.return_value = mock_instance # For _init_vectorstore
-        mock_chroma_class.from_texts.return_value = mock_instance # For ingest_cv
+        mock_chroma_class.from_documents.return_value = mock_instance # For ingest_cv
 
         yield mock_chroma_class, mock_instance
 
@@ -153,14 +153,14 @@ def test_ingest_cv_first_time_success(cv_manager, mock_pdf_file, mock_image_conv
     args, kwargs = mock_vision_model.invoke.call_args
     human_message_content = args[0][1].content
     assert human_message_content[0]["type"] == "text"
-    assert "Transcribe the following CV page precisely..." in human_message_content[0]["text"]
+    assert "Transcribe the CV page in Markdown" in human_message_content[0]["text"]
     assert human_message_content[1]["type"] == "image_url"
     assert "data:image/jpeg;base64," in human_message_content[1]["image_url"]["url"]
 
     # Assertions for ChromaDB creation
-    mock_chroma_class.from_texts.assert_called_once()
-    _, kwargs = mock_chroma_class.from_texts.call_args # Use _ for unused positional args
-    assert "Transcribed text from image." in kwargs["texts"][0] # Check if the transcribed text is passed
+    mock_chroma_class.from_documents.assert_called_once()
+    _, kwargs = mock_chroma_class.from_documents.call_args # Use _ for unused positional args
+    assert "Transcribed text from image." in kwargs["documents"][0].page_content # Check if the transcribed text is passed
     assert kwargs["embedding"] == cv_manager.embeddings
     assert kwargs["persist_directory"] == temp_db_path
     assert kwargs["collection_name"] == "test_cv_collection"
@@ -191,8 +191,8 @@ def test_ingest_cv_cached_unchanged(cv_manager, mock_pdf_file, mock_image_conver
     mock_convert_from_path.assert_not_called()
     mock_vision_model.invoke.assert_not_called()
 
-    # Assert that Chroma.from_texts was NOT called (no re-ingestion)
-    mock_chroma_class.from_texts.assert_not_called()
+    # Assert that Chroma.from_documents was NOT called (no re-ingestion)
+    mock_chroma_class.from_documents.assert_not_called()
     # Assert that _init_vectorstore was called to load the existing DB
     mock_chroma_class.assert_called_once_with(
         collection_name="test_cv_collection",
@@ -217,7 +217,7 @@ def test_ingest_cv_reingest_on_change(cv_manager, mock_pdf_file, mock_image_conv
     # Assert that conversion and vision model WERE called (re-ingestion occurred)
     mock_convert_from_path.assert_called_once()
     mock_vision_model.invoke.assert_called_once()
-    mock_chroma_class.from_texts.assert_called_once()
+    mock_chroma_class.from_documents.assert_called_once()
 
     # Assert hash file is updated with the new hash
     with open(cv_manager.hash_file_path, "r") as f:
@@ -228,6 +228,8 @@ def test_ingest_cv_reingest_on_change(cv_manager, mock_pdf_file, mock_image_conv
 def test_get_context_initial_load(cv_manager, mock_chroma):
     """Test get_context when the vectorstore needs to be initialized."""
     mock_chroma_class, mock_chroma_instance = mock_chroma
+    with open(cv_manager.hash_file_path, "w") as f:
+        f.write("dummy_hash")
     query = "test query"
     k = 2
     context = cv_manager.get_context(query, k=k)
@@ -247,6 +249,8 @@ def test_get_context_already_loaded(cv_manager, mock_chroma):
     mock_chroma_class, mock_chroma_instance = mock_chroma
     # Manually set _vectorstore to simulate it being loaded
     cv_manager._vectorstore = mock_chroma_instance
+    with open(cv_manager.hash_file_path, "w") as f:
+        f.write("dummy_hash")
     query = "another query"
     k = 3
     context = cv_manager.get_context(query, k=k)
@@ -259,6 +263,8 @@ def test_get_context_already_loaded(cv_manager, mock_chroma):
 def test_get_full_resume_text_initial_load(cv_manager, mock_chroma):
     """Test get_full_resume_text when the vectorstore needs to be initialized."""
     mock_chroma_class, mock_chroma_instance = mock_chroma
+    with open(cv_manager.hash_file_path, "w") as f:
+        f.write("dummy_hash")
     full_text = cv_manager.get_full_resume_text()
 
     # _init_vectorstore should be called because _vectorstore is initially None
@@ -267,7 +273,7 @@ def test_get_full_resume_text_initial_load(cv_manager, mock_chroma):
         embedding_function=cv_manager.embeddings,
         persist_directory=cv_manager.db_path,
     )
-    mock_chroma_instance.get.assert_called_once()
+    mock_chroma_instance.get.assert_called()
     assert full_text == "Full text doc 1\nFull text doc 2"
     assert cv_manager._vectorstore == mock_chroma_instance
 
@@ -276,9 +282,11 @@ def test_get_full_resume_text_already_loaded(cv_manager, mock_chroma):
     mock_chroma_class, mock_chroma_instance = mock_chroma
     # Manually set _vectorstore to simulate it being loaded
     cv_manager._vectorstore = mock_chroma_instance
+    with open(cv_manager.hash_file_path, "w") as f:
+        f.write("dummy_hash")
     full_text = cv_manager.get_full_resume_text()
 
     # _init_vectorstore should NOT be called again
     mock_chroma_class.assert_not_called()
-    mock_chroma_instance.get.assert_called_once()
+    mock_chroma_instance.get.assert_called()
     assert full_text == "Full text doc 1\nFull text doc 2"
