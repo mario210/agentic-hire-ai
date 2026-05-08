@@ -2,6 +2,7 @@ import os
 import base64
 import hashlib
 import re
+from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from typing import List, Dict, Any, Optional
 
@@ -37,6 +38,7 @@ class CVVectorManager:
         self.embeddings = embeddings  # type: ignore
         self._vectorstore: Optional[Chroma] = None
         self.hash_file_path = os.path.join(self.db_path, "cv_hash.txt")
+        self.cv_text_cache_path = os.path.join(self.db_path, "cv_text.md")
         os.makedirs(self.db_path, exist_ok=True)
 
     def _init_vectorstore(self) -> None:
@@ -67,7 +69,7 @@ class CVVectorManager:
 
     @staticmethod
     def _pdf_to_base64_images(file_path: str) -> List[str]:
-        images = convert_from_path(file_path, dpi=300)
+        images = convert_from_path(file_path, dpi=150)
         base64_images = []
 
         for img in images:
@@ -81,6 +83,36 @@ class CVVectorManager:
     @staticmethod
     def _normalize_bullets(text: str) -> str:
         return re.sub(r"[•\-\*]", "\n•", text)
+
+    def _process_single_page(self, page_data: tuple) -> str:
+        i, b64_img, total = page_data
+        print(f"Processing page {i + 1}/{total}")
+
+        system_msg = SystemMessage(
+            content="You are an expert recruitment assistant specializing in CV transcription."
+        )
+        human_msg = HumanMessage(
+            content=[
+                {
+                    "type": "text",
+                    "text": (
+                        "Transcribe the CV page in Markdown.\n"
+                        "# for name\n"
+                        "## for sections (Experience, Education, Skills)\n"
+                        "### for entries (jobs, degrees)"
+                    ),
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{b64_img}",
+                        "detail": "high",
+                    },
+                },
+            ]
+        )
+        response = self.vision_model.invoke([system_msg, human_msg])
+        return response.content
 
     @staticmethod
     def _split_experience_block(text: str) -> List[str]:
@@ -101,52 +133,34 @@ class CVVectorManager:
             with open(self.hash_file_path, "r") as f:
                 stored_hash = f.read().strip()
 
-        if new_hash == stored_hash and os.path.exists(self.db_path):
+        hash_matches = new_hash == stored_hash
+        chroma_db_file = os.path.join(self.db_path, "chroma.sqlite3")
+
+        if hash_matches and os.path.exists(chroma_db_file):
             print("✅ CV unchanged. Using cached embeddings.")
             self._init_vectorstore()
             return
 
-        print("👁️ Reading CV via Vision model...")
+        if hash_matches and os.path.exists(self.cv_text_cache_path):
+            print("✅ CV unchanged. Re-embedding from text cache (skipping Vision LLM)...")
+            with open(self.cv_text_cache_path, "r") as f:
+                full_text = f.read()
+            print(f"✅ Text loaded from cache ({len(full_text)} chars)")
+        else:
+            print("👁️ Reading CV via Vision model...")
+            base64_images = self._pdf_to_base64_images(file_path)
+            page_data = [(i, img, len(base64_images)) for i, img in enumerate(base64_images)]
 
-        base64_images = self._pdf_to_base64_images(file_path)
+            with ThreadPoolExecutor() as executor:
+                clean_text_parts = list(executor.map(self._process_single_page, page_data))
 
-        clean_text_parts = []
+            full_text = "\n\n".join(clean_text_parts)
+            full_text = self._normalize_bullets(full_text)
 
-        for i, b64_img in enumerate(base64_images):
-            print(f"Processing page {i + 1}/{len(base64_images)}")
+            with open(self.cv_text_cache_path, "w") as f:
+                f.write(full_text)
 
-            system_msg = SystemMessage(
-                content="You are an expert recruitment assistant specializing in CV transcription."
-            )
-
-            human_msg = HumanMessage(
-                content=[
-                    {
-                        "type": "text",
-                        "text": (
-                            "Transcribe the CV page in Markdown.\n"
-                            "# for name\n"
-                            "## for sections (Experience, Education, Skills)\n"
-                            "### for entries (jobs, degrees)"
-                        ),
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{b64_img}",
-                            "detail": "high",
-                        },
-                    },
-                ]
-            )
-
-            response = self.vision_model.invoke([system_msg, human_msg])
-            clean_text_parts.append(response.content)
-
-        full_text = "\n\n".join(clean_text_parts)
-        full_text = self._normalize_bullets(full_text)
-
-        print(f"✅ Text reconstructed ({len(full_text)} chars)")
+            print(f"✅ Text reconstructed ({len(full_text)} chars)")
 
         # --- Markdown Header Split ---
         headers_to_split_on = [

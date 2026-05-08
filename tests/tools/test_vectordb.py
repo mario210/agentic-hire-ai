@@ -110,7 +110,7 @@ def test_pdf_to_base64_images_success(mock_image_conversion, mock_pdf_file):
     mock_convert_from_path, mock_image_save = mock_image_conversion
     base64_images = CVVectorManager._pdf_to_base64_images(mock_pdf_file)
 
-    mock_convert_from_path.assert_called_once_with(mock_pdf_file, dpi=300)
+    mock_convert_from_path.assert_called_once_with(mock_pdf_file, dpi=150)
     # Check that save was called with a BytesIO object (ANY) and correct format/quality
     mock_image_save.assert_called_once_with(ANY, format="JPEG", quality=85)
     assert len(base64_images) == 1
@@ -145,7 +145,7 @@ def test_ingest_cv_first_time_success(cv_manager, mock_pdf_file, mock_image_conv
     cv_manager.ingest_cv(mock_pdf_file)
 
     # Assertions for PDF to Image conversion
-    mock_convert_from_path.assert_called_once_with(mock_pdf_file, dpi=300)
+    mock_convert_from_path.assert_called_once_with(mock_pdf_file, dpi=150)
     mock_image_save.assert_called_once_with(ANY, format="JPEG", quality=85)
 
     # Assertions for Vision LLM transcription
@@ -173,16 +173,23 @@ def test_ingest_cv_first_time_success(cv_manager, mock_pdf_file, mock_image_conv
         stored_hash = f.read().strip()
     assert stored_hash == CVVectorManager._calculate_file_hash(mock_pdf_file)
 
+    # Assert text cache was written
+    assert os.path.exists(cv_manager.cv_text_cache_path)
+    with open(cv_manager.cv_text_cache_path, "r") as f:
+        cached_text = f.read()
+    assert "Transcribed text from image." in cached_text
+
 def test_ingest_cv_cached_unchanged(cv_manager, mock_pdf_file, mock_image_conversion, mock_vision_model, mock_chroma, temp_db_path):
-    """Test that ingestion is skipped if the file is unchanged and DB exists."""
+    """Test that ingestion is skipped if the file is unchanged and ChromaDB exists."""
     mock_convert_from_path, _ = mock_image_conversion
     mock_chroma_class, mock_chroma_instance = mock_chroma
 
-    # Simulate a previous ingestion by creating the hash file with the current file's hash
+    # Simulate a previous ingestion by creating the hash file and chroma.sqlite3 sentinel
     initial_hash = CVVectorManager._calculate_file_hash(mock_pdf_file)
-    # The temp_db_path fixture already ensures the directory exists
     with open(cv_manager.hash_file_path, "w") as f:
         f.write(initial_hash)
+    with open(os.path.join(temp_db_path, "chroma.sqlite3"), "w") as f:
+        f.write("")
 
     # Call ingest_cv
     cv_manager.ingest_cv(mock_pdf_file)
@@ -224,6 +231,34 @@ def test_ingest_cv_reingest_on_change(cv_manager, mock_pdf_file, mock_image_conv
         updated_hash = f.read().strip()
     assert updated_hash == CVVectorManager._calculate_file_hash(mock_pdf_file)
     assert updated_hash != "old_hash_different_from_new_one"
+
+def test_ingest_cv_text_cache_fallback(cv_manager, mock_pdf_file, mock_image_conversion, mock_vision_model, mock_chroma, temp_db_path):
+    """Test that Vision LLM is skipped when hash matches and text cache exists (ChromaDB missing)."""
+    mock_convert_from_path, _ = mock_image_conversion
+    mock_chroma_class, mock_chroma_instance = mock_chroma
+
+    # Hash matches but no chroma.sqlite3 — simulate DB was cleared
+    initial_hash = CVVectorManager._calculate_file_hash(mock_pdf_file)
+    with open(cv_manager.hash_file_path, "w") as f:
+        f.write(initial_hash)
+
+    # Provide a pre-existing text cache
+    cached_text = "## Experience\n### Some Job\nDid stuff."
+    with open(cv_manager.cv_text_cache_path, "w") as f:
+        f.write(cached_text)
+
+    cv_manager.ingest_cv(mock_pdf_file)
+
+    # Vision LLM and PDF conversion must NOT be called
+    mock_convert_from_path.assert_not_called()
+    mock_vision_model.invoke.assert_not_called()
+
+    # ChromaDB must be re-built from the cached text
+    mock_chroma_class.from_documents.assert_called_once()
+    _, kwargs = mock_chroma_class.from_documents.call_args
+    combined = " ".join(d.page_content for d in kwargs["documents"])
+    assert "Some Job" in combined or "Did stuff" in combined
+
 
 def test_get_context_initial_load(cv_manager, mock_chroma):
     """Test get_context when the vectorstore needs to be initialized."""
