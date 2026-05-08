@@ -141,4 +141,6 @@ class TestJobValidator:
         job = JobOffer(id="test-id", title="Test Job", url="http://example.com/llm-fail", company="TestCo", location="Remote")
         assert not validator.is_job_valid(job)
         mock_requests_get.assert_called_once()
-        mock_checker_invoke.assert_called_once()
+        # With retry logic, invoke is called max_retries times (default 2)
+        from src.config.settings import config
+        assert mock_checker_invoke.call_count == config.validator_max_retries
