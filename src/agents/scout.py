@@ -1,7 +1,7 @@
 import time
 import urllib.parse
 from datetime import datetime
-from typing import List, Set
+from typing import List, Set, Any
 from langchain_core.messages import (
     HumanMessage,
     SystemMessage,
@@ -23,7 +23,7 @@ class ScoutAgent:
     concrete job offers instead of just search pages.
     """
 
-    def __init__(self, llm):
+    def __init__(self, llm: Any) -> None:
         self.llm = llm.bind_tools([job_search_tool, scrape_webpage_tool])
         self.parser = JobParser()
 
@@ -44,7 +44,7 @@ class ScoutAgent:
         )
         return normalized
 
-    def __call__(self, state: AgenticHireState) -> dict:
+    def __call__(self, state: AgenticHireState) -> dict[str, Any]:
         scout_runs = state.get("scout_runs", 0) + 1
         logger.info(f"--- [NODE] EXECUTING SCOUT AGENT (Run {scout_runs}) ---")
 

@@ -4,7 +4,7 @@ from src.schema.state import JobOffer
 from src.config.settings import config
 from pydantic import BaseModel, Field
 from loguru import logger
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 import time
 
 
@@ -23,7 +23,7 @@ class JobValidator:
     Includes caching, retries, and configurable timeouts.
     """
 
-    def __init__(self, llm):
+    def __init__(self, llm: Any) -> None:
         """
         Initialize the JobValidator with an LLM instance.
         """

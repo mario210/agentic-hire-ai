@@ -1,6 +1,4 @@
 import os
-os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
-
 import streamlit as st
 from loguru import logger
 import tempfile
@@ -9,6 +7,7 @@ import re
 import functools
 import html
 import time
+from typing import Any
 
 # --- BACKEND IMPORTS ---
 from main import _prepare_cv_data, _initialize_state, _run_graph
@@ -36,13 +35,13 @@ if "cancel_requested" not in st.session_state:
 
 # --- BASE64 IMAGE ---
 @functools.lru_cache(maxsize=10)
-def get_base64_image(image_path):
+def get_base64_image(image_path: str) -> str:
     with open(image_path, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
 
 # --- CSS ---
-def inject_layout_css(img_base64):
+def inject_layout_css(img_base64: str) -> None:
     st.markdown(
         f"""
     <style>
@@ -153,10 +152,10 @@ def inject_layout_css(img_base64):
         min-height: 100px;
     }}
 
-    .prefix {{ 
-        color: #1de9b6; 
-        font-weight: bold; 
-        font-family: 'Courier New', monospace; 
+    .prefix {{
+        color: #1de9b6;
+        font-weight: bold;
+        font-family: 'Courier New', monospace;
         font-size: 0.9rem;
         margin-bottom: 4px;
         display: inline-block;
@@ -166,9 +165,9 @@ def inject_layout_css(img_base64):
         flex-shrink: 0;
     }}
 
-    .msg-content {{ 
-        color: #C0D6E4; 
-        font-family: monospace; 
+    .msg-content {{
+        color: #C0D6E4;
+        font-family: monospace;
         font-size: 0.95rem;
         word-break: break-word;
     }}
@@ -216,7 +215,7 @@ def inject_layout_css(img_base64):
 
 
 # --- TERMINAL RENDERER ---
-def render_terminal(placeholder, logs):
+def render_terminal(placeholder: Any, logs: list[Any]) -> None:
     """Zero-gap terminal using pure HTML/CSS for log rows."""
     with placeholder.container():
         with st.container(height=600, border=True):
@@ -262,14 +261,14 @@ def render_terminal(placeholder, logs):
 
 # --- LOG SINK ---
 class StreamlitLogSink:
-    def __init__(self, placeholder, log_buffer):
+    def __init__(self, placeholder: Any, log_buffer: list[Any]) -> None:
         self.placeholder = placeholder
         self.log_buffer = log_buffer
-        self.handler_id = None
-        self.last_update = 0.0
+        self.handler_id: Any = None
+        self.last_update: float = 0.0
 
-    def write(self, message):
-        clean = message.strip()
+    def write(self, message: Any) -> None:
+        clean = str(message).strip()
 
         level = "INFO"
         if hasattr(message, "record"):
@@ -303,19 +302,19 @@ class StreamlitLogSink:
             render_terminal(self.placeholder, self.log_buffer)
             self.last_update = current_time
 
-    def __enter__(self):
+    def __enter__(self) -> "StreamlitLogSink":
         self.handler_id = logger.add(
             self, format="{time:HH:mm:ss} | {message}", level="INFO"
         )
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         if self.handler_id:
             logger.remove(self.handler_id)
 
 
 # --- MAIN APP ---
-def streamlit_app():
+def streamlit_app() -> None:
 
     img_path = "ui/images/bg.jpg"
     if os.path.exists(img_path):

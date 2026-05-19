@@ -1,19 +1,17 @@
-import os
-os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
-
 from src.graph import build_graph
 from src.agents.agents import get_agent_factory
 from src.config.logging import setup_logging
 from src.config.settings import config
 from loguru import logger
+from typing import Any, cast
 
 
-def _configure_application():
+def _configure_application() -> None:
     """Configures logging for the application."""
     setup_logging(debug=config.debug_mode)
 
 
-def _prepare_cv_data(cv_file_path: str, factory_instance):
+def _prepare_cv_data(cv_file_path: str, factory_instance: Any) -> Any:
     """Initializes the Vector Manager and ingests the CV."""
     logger.info("Initializing Vector Manager and ingesting CV...")
     cv_manager = factory_instance.vector_manager
@@ -31,7 +29,7 @@ def _prepare_cv_data(cv_file_path: str, factory_instance):
     return cv_manager
 
 
-def _initialize_state(cv_manager, app_config, user_prompt=config.initial_prompt):
+def _initialize_state(cv_manager: Any, app_config: Any, user_prompt: str = config.initial_prompt) -> dict[str, Any]:
     """Sets up the initial state for the LangGraph application."""
     logger.info("Fetching full resume text for initial context...")
     initial_context = cv_manager.get_full_resume_text()
@@ -54,16 +52,16 @@ def _initialize_state(cv_manager, app_config, user_prompt=config.initial_prompt)
     return initial_state
 
 
-def _run_graph(initial_state: dict, app_instance):
+def _run_graph(initial_state: dict[str, Any], app_instance: Any) -> dict[str, Any]:
     """Invokes the LangGraph application with the initial state."""
     print("🚀 AgenticHire AI is starting...")
     logger.info("Invoking LangGraph application...")
     final_state = app_instance.invoke(initial_state)
     logger.info("LangGraph application finished successfully.")
-    return final_state
+    return cast(dict[str, Any], final_state)
 
 
-def _display_results(final_state: dict):
+def _display_results(final_state: dict[str, Any]) -> None:
     """Prints a summary of the job search results."""
     print("\n" + "=" * 30)
     print("🎯 JOB SEARCH SUMMARY")
@@ -86,7 +84,7 @@ def _display_results(final_state: dict):
         print("-" * 20)
 
 
-def main():
+def main() -> None:
     _configure_application()
     logger.info("Starting AgenticHire AI main process.")
 

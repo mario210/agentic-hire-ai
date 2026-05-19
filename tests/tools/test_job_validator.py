@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch, Mock
 import requests
 from src.tools.job_validator import JobValidator, JobOffer, ExpirationCheck
+from typing import Generator
 
 
 class TestJobValidator:
@@ -10,7 +11,7 @@ class TestJobValidator:
     """
 
     @pytest.fixture
-    def mock_llm(self):
+    def mock_llm(self) -> Mock:
         """Fixture to create a mock LLM instance."""
         mock_llm_instance = Mock()
         # Mock the with_structured_output method to return a mock checker
@@ -18,23 +19,23 @@ class TestJobValidator:
         return mock_llm_instance
 
     @pytest.fixture
-    def validator(self, mock_llm):
+    def validator(self, mock_llm: Mock) -> JobValidator:
         """Fixture to create a JobValidator instance with a mocked LLM."""
         return JobValidator(mock_llm)
 
     @pytest.fixture
-    def mock_requests_get(self):
+    def mock_requests_get(self) -> Generator[Mock, None, None]:
         """Fixture to patch requests.get."""
         with patch("requests.get") as mock_get:
             yield mock_get
 
     @pytest.fixture
-    def mock_checker_invoke(self, validator):
+    def mock_checker_invoke(self, validator: JobValidator) -> Generator[Mock, None, None]:
         """Fixture to patch the checker.invoke method."""
         with patch.object(validator.checker, "invoke") as mock_invoke:
             yield mock_invoke
 
-    def test_initialization(self, mock_llm):
+    def test_initialization(self, mock_llm: Mock) -> None:
         """
         Tests that the JobValidator initializes correctly and sets up the checker.
         """
@@ -43,7 +44,7 @@ class TestJobValidator:
         assert validator.checker is not None
 
     @pytest.mark.parametrize("invalid_url", ["N/A", "ftp://example.com", "not-a-url"])
-    def test_invalid_url_format(self, validator, invalid_url):
+    def test_invalid_url_format(self, validator: JobValidator, invalid_url: str) -> None:
         """
         Tests that is_job_valid returns False for invalid URL formats.
         """
@@ -53,8 +54,8 @@ class TestJobValidator:
         assert not validator.is_job_valid(job)
 
     def test_http_error_status_code(
-        self, validator, mock_requests_get, mock_checker_invoke
-    ):
+        self, validator: JobValidator, mock_requests_get: Mock, mock_checker_invoke: Mock
+    ) -> None:
         """
         Tests that is_job_valid returns False when requests.get returns an HTTP error status.
         """
@@ -72,7 +73,7 @@ class TestJobValidator:
         mock_requests_get.assert_called_once()
         mock_checker_invoke.assert_not_called()  # LLM should not be called on HTTP error
 
-    def test_request_exception(self, validator, mock_requests_get, mock_checker_invoke):
+    def test_request_exception(self, validator: JobValidator, mock_requests_get: Mock, mock_checker_invoke: Mock) -> None:
         """
         Tests that is_job_valid returns False when requests.get raises a RequestException.
         """
@@ -91,8 +92,8 @@ class TestJobValidator:
         mock_checker_invoke.assert_not_called()  # LLM should not be called on request exception
 
     def test_llm_determines_inactive(
-        self, validator, mock_requests_get, mock_checker_invoke
-    ):
+        self, validator: JobValidator, mock_requests_get: Mock, mock_checker_invoke: Mock
+    ) -> None:
         """
         Tests that is_job_valid returns False when the LLM determines the job is inactive.
         """
@@ -118,8 +119,8 @@ class TestJobValidator:
         mock_checker_invoke.assert_called_once()
 
     def test_llm_determines_active(
-        self, validator, mock_requests_get, mock_checker_invoke
-    ):
+        self, validator: JobValidator, mock_requests_get: Mock, mock_checker_invoke: Mock
+    ) -> None:
         """
         Tests that is_job_valid returns True when the LLM determines the job is active.
         """
@@ -145,8 +146,8 @@ class TestJobValidator:
         mock_checker_invoke.assert_called_once()
 
     def test_general_exception_during_validation(
-        self, validator, mock_requests_get, mock_checker_invoke
-    ):
+        self, validator: JobValidator, mock_requests_get: Mock, mock_checker_invoke: Mock
+    ) -> None:
         """
         Tests that is_job_valid returns False for unexpected exceptions during the process.
         """
@@ -172,8 +173,8 @@ class TestJobValidator:
             mock_checker_invoke.assert_not_called()  # LLM should not be called if parsing fails
 
     def test_llm_invoke_exception(
-        self, validator, mock_requests_get, mock_checker_invoke
-    ):
+        self, validator: JobValidator, mock_requests_get: Mock, mock_checker_invoke: Mock
+    ) -> None:
         """
         Tests that is_job_valid returns False if the LLM invocation fails.
         """

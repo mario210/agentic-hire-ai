@@ -3,9 +3,10 @@ from src.schema.state import AgenticHireState
 from src.agents.agents import get_agent_factory  # Import the getter function
 from src.config.settings import config
 from loguru import logger
+from typing import Any
 
 
-def should_rescout(state: AgenticHireState):
+def should_rescout(state: AgenticHireState) -> str:
     """
     Conditional logic to decide whether to re-run the scout or proceed.
     """
@@ -41,7 +42,7 @@ def should_rescout(state: AgenticHireState):
     return "rescout"
 
 
-def validate_and_limit_jobs_node(state: AgenticHireState) -> dict:
+def validate_and_limit_jobs_node(state: AgenticHireState) -> dict[str, Any]:
     """
     Node to filter out invalid or expired job offers and limit the number.
     """
@@ -76,7 +77,7 @@ def validate_and_limit_jobs_node(state: AgenticHireState) -> dict:
     }
 
 
-def build_graph():
+def build_graph() -> Any:
     factory = get_agent_factory()
     # 2. Initialize the Graph with our State schema
     logger.debug("Building LangGraph workflow")

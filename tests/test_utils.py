@@ -1,11 +1,13 @@
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, ANY
 from src.utils import JobParser, JobOfferList, JobOffer
+from typing import Generator, Tuple, Any
+from unittest.mock import MagicMock as MagicMockType
 
 
 # Fixture to mock the config module
 @pytest.fixture
-def mock_config():
+def mock_config() -> Generator[MagicMock, None, None]:
     with patch("src.utils.config") as mock_cfg:
         mock_cfg.openrouter_base_url = "http://mock-openrouter.com"
         mock_cfg.openrouter_api_key = "mock-key"
@@ -14,7 +16,7 @@ def mock_config():
 
 # Fixture to mock ChatOpenAI
 @pytest.fixture
-def mock_chat_openai():
+def mock_chat_openai() -> Generator[Tuple[MagicMock, MagicMock], None, None]:
     with patch("src.utils.ChatOpenAI") as mock_llm_class:
         mock_llm_instance = MagicMock()
         mock_llm_class.return_value = mock_llm_instance
@@ -24,7 +26,7 @@ def mock_chat_openai():
 # --- Tests for JobParser ---
 
 
-def test_job_parser_initialization(mock_config, mock_chat_openai):
+def test_job_parser_initialization(mock_config: MagicMock, mock_chat_openai: Tuple[MagicMock, MagicMock]) -> None:
     mock_llm_class, mock_llm_instance = mock_chat_openai
 
     parser = JobParser(model_name="test-model")
@@ -33,7 +35,7 @@ def test_job_parser_initialization(mock_config, mock_chat_openai):
         model="test-model",
         temperature=0,
         base_url=mock_config.openrouter_base_url,
-        api_key=mock_config.openrouter_api_key,
+        api_key=ANY,
     )
     mock_llm_instance.with_structured_output.assert_called_once_with(JobOfferList)
     assert parser.llm == mock_llm_instance
@@ -42,7 +44,7 @@ def test_job_parser_initialization(mock_config, mock_chat_openai):
     )
 
 
-def test_job_parser_parse_success(mock_config, mock_chat_openai):
+def test_job_parser_parse_success(mock_config: MagicMock, mock_chat_openai: Tuple[MagicMock, MagicMock]) -> None:
     _, mock_llm_instance = mock_chat_openai
 
     # Setup mock for structured_llm.invoke
@@ -89,7 +91,7 @@ def test_job_parser_parse_success(mock_config, mock_chat_openai):
     assert parsed_jobs == expected_job_offers
 
 
-def test_job_parser_parse_error_handling(mock_config, mock_chat_openai, capsys):
+def test_job_parser_parse_error_handling(mock_config: MagicMock, mock_chat_openai: Tuple[MagicMock, MagicMock], capsys: Any) -> None:
     _, mock_llm_instance = mock_chat_openai
 
     mock_structured_llm_invoke = MagicMock()

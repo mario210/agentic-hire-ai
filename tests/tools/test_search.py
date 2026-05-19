@@ -2,11 +2,12 @@ import pytest
 from unittest.mock import patch, Mock
 import requests  # Import requests to access its exceptions
 from src.tools.search import job_search_tool, JobSearchProvider
+from typing import Generator
 
 
 # Mock the config object globally for these tests
 @pytest.fixture(autouse=True)
-def mock_config():
+def mock_config() -> Generator[Mock, None, None]:
     """
     Fixture to mock the application configuration, specifically the OrioSearch base URL.
     This ensures tests don't make actual external calls and use a predictable URL.
@@ -21,7 +22,7 @@ class TestJobSearchTool:
     Tests for the job_search_tool function.
     """
 
-    def test_successful_search(self, mock_config):
+    def test_successful_search(self, mock_config: Mock) -> None:
         """
         Tests that job_search_tool successfully makes an API call and returns
         the search results as a string.
@@ -48,7 +49,7 @@ class TestJobSearchTool:
             )
             assert result == str(mock_response_data)
 
-    def test_api_connection_error(self, mock_config):
+    def test_api_connection_error(self, mock_config: Mock) -> None:
         """
         Tests that job_search_tool handles connection errors gracefully.
         """
@@ -67,7 +68,7 @@ class TestJobSearchTool:
             assert "Error connecting to OrioSearch" in result
             assert "Connection refused" in result
 
-    def test_http_error(self, mock_config):
+    def test_http_error(self, mock_config: Mock) -> None:
         """
         Tests that job_search_tool handles HTTP errors (e.g., 404, 500) gracefully,
         as they are caught by RequestException.
@@ -97,7 +98,7 @@ class TestJobSearchProvider:
     Tests for the JobSearchProvider class.
     """
 
-    def test_initialization(self):
+    def test_initialization(self) -> None:
         """
         Tests that the JobSearchProvider correctly initializes and
         assigns the job_search_tool.

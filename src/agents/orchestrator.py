@@ -2,6 +2,7 @@ from src.schema.state import AgenticHireState, JobOffer
 from src.tools.vectordb import CVVectorManager
 from pydantic import BaseModel, Field
 from loguru import logger
+from typing import Any
 
 
 class MatchRating(BaseModel):
@@ -17,14 +18,14 @@ class OrchestratorAgent:
     experience stored in ChromaDB and filters for the best fits.
     """
 
-    def __init__(self, llm, vector_manager: CVVectorManager):
+    def __init__(self, llm: Any, vector_manager: CVVectorManager) -> None:
         self.llm = llm
         # Initialize the Vector DB manager to fetch CV context
         self.vector_manager = vector_manager
         # Create a structured judge
         self.judge = self.llm.with_structured_output(MatchRating)
 
-    def __call__(self, state: AgenticHireState) -> dict:
+    def __call__(self, state: AgenticHireState) -> dict[str, Any]:
         logger.info("--- [NODE] EXECUTING ORCHESTRATOR (MATCHMAKER) ---")
 
         valid_jobs = state.get("valid_jobs", [])
@@ -44,7 +45,7 @@ class OrchestratorAgent:
 
             # 1. RAG Step: Get specific context from CV for THIS job
             # We search for the job title and description in our vectors
-            description_snippet = (job.description[:200] if job.description else "")
+            description_snippet = job.description[:200] if job.description else ""
             search_query = f"{job.title} {description_snippet}"
             relevant_cv_parts = self.vector_manager.get_context(search_query, k=3)
 

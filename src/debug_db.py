@@ -10,7 +10,7 @@ from pydantic import SecretStr
 DB_PATH = "../data/chroma_db"
 
 
-def inspect_db():
+def inspect_db() -> None:
     api_key_value = config.openrouter_api_key
     api_key: SecretStr | None = SecretStr(api_key_value) if api_key_value else None
     # Initialize embeddings
@@ -42,7 +42,9 @@ def inspect_db():
 
     # 2. Show first 5 chunks
     for i in range(min(5, len(documents))):
-        doc_content = documents[i] if isinstance(documents[i], str) else str(documents[i])
+        doc_content = (
+            documents[i] if isinstance(documents[i], str) else str(documents[i])
+        )
         print(f"CHUNK #{i + 1} (ID: {ids[i]})")
         # print(f"Metadata: {metadatas[i]}")
         print(f"Content Preview: {doc_content[:300]}...")

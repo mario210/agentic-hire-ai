@@ -2,6 +2,7 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from src.schema.state import AgenticHireState
 from urllib.parse import urlparse
 from loguru import logger
+from typing import Any
 
 
 class TailorAgent:
@@ -10,10 +11,10 @@ class TailorAgent:
     to generate highly personalized application materials.
     """
 
-    def __init__(self, llm):
+    def __init__(self, llm: Any) -> None:
         self.llm = llm
 
-    def __call__(self, state: AgenticHireState) -> dict:
+    def __call__(self, state: AgenticHireState) -> dict[str, Any]:
         logger.info("--- [NODE] EXECUTING TAILOR (CONTENT GENERATION) ---")
 
         shortlisted_jobs = state.get("shortlisted_jobs", [])

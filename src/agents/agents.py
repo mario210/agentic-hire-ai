@@ -6,6 +6,7 @@ from src.tools.job_validator import JobValidator
 from src.config.settings import config
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from pydantic import SecretStr
+from typing import Any
 
 
 class AgentFactory:
@@ -14,7 +15,7 @@ class AgentFactory:
     with consistent configuration.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Centralized OpenRouter Config
         api_key_value = config.openrouter_api_key
         api_key: SecretStr | None = SecretStr(api_key_value) if api_key_value else None
@@ -77,6 +78,6 @@ class AgentFactory:
 
 # Function to get an AgentFactory instance.
 # This allows for lazy initialization and easier mocking in tests.
-def get_agent_factory():
+def get_agent_factory() -> AgentFactory:
     """Returns a new instance of AgentFactory."""
     return AgentFactory()

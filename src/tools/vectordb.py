@@ -4,7 +4,7 @@ import hashlib
 import re
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, cast
 
 # OS Dependencies Check
 try:
@@ -30,11 +30,11 @@ class CVVectorManager:
 
     def __init__(
         self,
-        vision_model,
-        embeddings,
+        vision_model: Any,
+        embeddings: Any,
         db_path: str = "data/chroma_db",
         collection_name: str = "cv_collection",
-    ):
+    ) -> None:
         self.db_path = db_path
         self.collection_name = collection_name
         self.vision_model = vision_model
@@ -47,11 +47,11 @@ class CVVectorManager:
     def _init_vectorstore(self) -> None:
         self._vectorstore = Chroma(
             collection_name=self.collection_name,
-            embedding_function=self.embeddings,
+            embedding_function=cast(Any, self.embeddings),
             persist_directory=self.db_path,
         )
 
-    def _ensure_vectorstore_ready(self):
+    def _ensure_vectorstore_ready(self) -> None:
         if self._vectorstore is None:
             self._init_vectorstore()
 
@@ -130,7 +130,7 @@ class CVVectorManager:
         jobs = re.split(r"\n(?=### )", text)
         return [job.strip() for job in jobs if job.strip()]
 
-    def ingest_cv(self, file_path: str):
+    def ingest_cv(self, file_path: str) -> None:
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Resume not found at: {file_path}")
 
@@ -245,7 +245,7 @@ class CVVectorManager:
         # --- Store ---
         self._vectorstore = Chroma.from_documents(
             documents=final_chunks,
-            embedding=self.embeddings,
+            embedding=cast(Any, self.embeddings),
             persist_directory=self.db_path,
             collection_name=self.collection_name,
             ids=[f"id_{i}" for i in range(len(final_chunks))],

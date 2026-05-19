@@ -33,5 +33,5 @@ class JobSearchProvider:
     filtering results before they reach the agent.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.search_tool = job_search_tool

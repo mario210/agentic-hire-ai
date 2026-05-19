@@ -2,7 +2,7 @@ from loguru import logger
 import sys
 
 
-def setup_logging(debug: bool = False):
+def setup_logging(debug: bool = False) -> None:
     logger.remove()  # remove default handler
 
     if debug:
@@ -22,5 +22,3 @@ def setup_logging(debug: bool = False):
             level="INFO",
             format="{time} | {level} | {message}",
         )
-
-    return logger
