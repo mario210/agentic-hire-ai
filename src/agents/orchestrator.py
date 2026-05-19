@@ -44,7 +44,8 @@ class OrchestratorAgent:
 
             # 1. RAG Step: Get specific context from CV for THIS job
             # We search for the job title and description in our vectors
-            search_query = f"{job.title} {job.description[:200]}"
+            description_snippet = (job.description[:200] if job.description else "")
+            search_query = f"{job.title} {description_snippet}"
             relevant_cv_parts = self.vector_manager.get_context(search_query, k=3)
 
             logger.debug(f"RAG retrieved context length: {len(relevant_cv_parts)}")

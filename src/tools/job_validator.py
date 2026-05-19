@@ -118,7 +118,7 @@ class JobValidator:
                 logger.debug(
                     f"LLM expiration check for '{job_title}' (attempt {attempt + 1})"
                 )
-                result = self.checker.invoke(prompt)
+                result: ExpirationCheck = self.checker.invoke(prompt)
                 return result
             except Exception as e:
                 if attempt < config.validator_max_retries - 1:
@@ -130,3 +130,4 @@ class JobValidator:
                         f"LLM call failed after {config.validator_max_retries} attempts: {str(e)}"
                     )
                     return None
+        return None

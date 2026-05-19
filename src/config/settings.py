@@ -74,4 +74,4 @@ class AppConfig(BaseSettings):
     embedded_model_name: str = Field("text-embedding-3-small")
 
 
-config = AppConfig()
+config = AppConfig()  # type: ignore[call-arg]

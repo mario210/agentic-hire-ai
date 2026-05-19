@@ -176,7 +176,9 @@ class ScoutAgent:
         for msg in messages:
             if getattr(msg, "type", "") == "ai" and not getattr(msg, "tool_calls", []):
                 if hasattr(msg, "content") and msg.content:
-                    raw_text_to_parse += msg.content + "\n\n"
+                    content = msg.content
+                    if isinstance(content, str):
+                        raw_text_to_parse += content + "\n\n"
 
         if raw_text_to_parse:
             try:

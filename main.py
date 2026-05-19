@@ -1,4 +1,5 @@
-from langchain_classic.agents.agent_toolkits.powerbi import prompt
+import os
+os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
 from src.graph import build_graph
 from src.agents.agents import get_agent_factory

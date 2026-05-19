@@ -56,6 +56,8 @@ class CVVectorManager:
             self._init_vectorstore()
 
         if os.path.exists(self.hash_file_path):
+            if self._vectorstore is None:
+                raise RuntimeError("Vector DB failed to initialize.")
             collection_data: Dict[str, Any] = self._vectorstore.get()
             if not collection_data or not collection_data.get("documents"):
                 raise RuntimeError("Vector DB is empty or corrupted.")
@@ -115,7 +117,10 @@ class CVVectorManager:
             ]
         )
         response = self.vision_model.invoke([system_msg, human_msg])
-        return response.content
+        content = response.content
+        if isinstance(content, str):
+            return content
+        return str(content)
 
     @staticmethod
     def _split_experience_block(text: str) -> List[str]:
@@ -253,9 +258,11 @@ class CVVectorManager:
 
     def get_context(self, query: str, k: int = 4) -> str:
         self._ensure_vectorstore_ready()
+        if self._vectorstore is None:
+            raise RuntimeError("Vector DB not initialized.")
         docs = self._vectorstore.similarity_search(query, k=k)
 
-        context_parts = []
+        context_parts: list[str] = []
 
         for doc in docs:
             headers = [v for k, v in doc.metadata.items() if k.startswith("Header")]
@@ -263,13 +270,19 @@ class CVVectorManager:
             prefix = f"[Section: {section_path}]\n" if section_path else ""
             context_parts.append(f"{prefix}{doc.page_content}")
 
-        return "\n---\n".join(context_parts)
+        result: str = "\n---\n".join(context_parts)
+        return result
 
     def get_full_resume_text(self) -> str:
         self._ensure_vectorstore_ready()
+        if self._vectorstore is None:
+            raise RuntimeError("Vector DB not initialized.")
         all_docs = self._vectorstore.get()
 
         if not all_docs or not all_docs.get("documents"):
             raise RuntimeError("No documents found.")
 
-        return "\n".join(all_docs["documents"])
+        documents = all_docs.get("documents")
+        if not documents:
+            raise RuntimeError("No documents found.")
+        return "\n".join(documents)

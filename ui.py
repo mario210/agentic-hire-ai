@@ -1,6 +1,8 @@
+import os
+os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
+
 import streamlit as st
 from loguru import logger
-import os
 import tempfile
 import base64
 import re
@@ -368,6 +370,9 @@ def streamlit_app():
             cv_path = None
 
             try:
+                if not uploaded_file:
+                    status_placeholder.error("Upload CV first.")
+                    return
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
                     tmp.write(uploaded_file.getvalue())
                     cv_path = tmp.name

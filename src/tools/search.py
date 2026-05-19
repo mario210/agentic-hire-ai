@@ -12,7 +12,7 @@ def job_search_tool(query: str) -> str:
     Returns a string containing a list of search results with titles, snippets, and URLs.
     """
     logger.debug(f"Search Query: {query}")
-    payload = {"query": query, "num_results": 10}
+    payload: dict[str, str | int] = {"query": query, "num_results": 10}
 
     try:
         response = requests.post(config.oriosearch_base_url, json=payload, timeout=10)
