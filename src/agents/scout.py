@@ -32,14 +32,16 @@ class ScoutAgent:
         if not url or url == "N/A":
             return url
         parsed = urllib.parse.urlparse(url)
-        normalized = urllib.parse.urlunparse((
-            parsed.scheme,
-            parsed.netloc.lower(),
-            parsed.path.rstrip('/'),
-            parsed.params,
-            "",
-            ""
-        ))
+        normalized = urllib.parse.urlunparse(
+            (
+                parsed.scheme,
+                parsed.netloc.lower(),
+                parsed.path.rstrip("/"),
+                parsed.params,
+                "",
+                "",
+            )
+        )
         return normalized
 
     def __call__(self, state: AgenticHireState) -> dict:
@@ -48,10 +50,14 @@ class ScoutAgent:
 
         resume_context = state.get("resume_context", "No resume context provided.")
         # target_criteria is not in the type definition, fallback correctly
-        target_criteria = state.get("target_criteria") or "open job roles matching the candidate's CV"
+        target_criteria = (
+            state.get("target_criteria") or "open job roles matching the candidate's CV"
+        )
 
         # Deduplication state (normalize URLs)
-        seen_jobs: Set[str] = {self._normalize_url(url) for url in state.get("seen_jobs", [])}
+        seen_jobs: Set[str] = {
+            self._normalize_url(url) for url in state.get("seen_jobs", [])
+        }
 
         # Extract previously evaluated jobs to avoid duplicates on subsequent runs
         evaluated_jobs = state.get("found_jobs", [])
@@ -61,11 +67,21 @@ class ScoutAgent:
         titles_to_avoid = [
             job.title for job in all_prior_jobs if hasattr(job, "title") and job.title
         ]
-        rejected_urls = {self._normalize_url(job.url) for job in rejected_jobs if hasattr(job, "url") and job.url}
-        existing_urls = {self._normalize_url(job.url) for job in evaluated_jobs if hasattr(job, "url") and job.url}
+        rejected_urls = {
+            self._normalize_url(job.url)
+            for job in rejected_jobs
+            if hasattr(job, "url") and job.url
+        }
+        existing_urls = {
+            self._normalize_url(job.url)
+            for job in evaluated_jobs
+            if hasattr(job, "url") and job.url
+        }
         urls_to_avoid = existing_urls | rejected_urls | seen_jobs
 
-        logger.debug(f"Previously evaluated jobs count: {len(titles_to_avoid)}, seen jobs count: {len(seen_jobs)}")
+        logger.debug(
+            f"Previously evaluated jobs count: {len(titles_to_avoid)}, seen jobs count: {len(seen_jobs)}"
+        )
 
         # Add a slight variation to the prompt on subsequent runs to encourage new results
         search_variation = ""
@@ -105,7 +121,9 @@ class ScoutAgent:
         messages: List[BaseMessage] = [system_msg, human_msg]
         all_found_jobs: List[JobOffer] = []
 
-        logger.info(f"[SCOUT] Starting LLM interaction loop (max {config.scout_max_iterations} iterations).")
+        logger.info(
+            f"[SCOUT] Starting LLM interaction loop (max {config.scout_max_iterations} iterations)."
+        )
         for i in range(config.scout_max_iterations):
             logger.debug(f"LLM interaction loop iteration {i + 1}")
             response = self.llm.invoke(messages)
@@ -164,8 +182,13 @@ class ScoutAgent:
             try:
                 parsed_jobs = self.parser.parse(raw_text_to_parse)
                 all_found_jobs = [
-                    job for job in parsed_jobs
-                    if not (hasattr(job, "url") and job.url and self._normalize_url(job.url) in urls_to_avoid)
+                    job
+                    for job in parsed_jobs
+                    if not (
+                        hasattr(job, "url")
+                        and job.url
+                        and self._normalize_url(job.url) in urls_to_avoid
+                    )
                 ]
                 logger.debug(f"Parsed {len(all_found_jobs)} jobs from messages.")
             except Exception as e:
@@ -174,15 +197,22 @@ class ScoutAgent:
 
         # Fallback if no tool calls were made or no jobs found
         if not all_found_jobs:
-            logger.warning("[SCOUT] No jobs found through agent loop. Running fallback search...")
+            logger.warning(
+                "[SCOUT] No jobs found through agent loop. Running fallback search..."
+            )
             try:
                 fallback_query = f"{target_criteria} open positions"
                 time.sleep(config.scout_rate_limit_delay)
                 raw_results = job_search_tool.invoke({"query": fallback_query})
                 parsed_fallback = self.parser.parse(str(raw_results))
                 all_found_jobs = [
-                    job for job in parsed_fallback
-                    if not (hasattr(job, "url") and job.url and self._normalize_url(job.url) in urls_to_avoid)
+                    job
+                    for job in parsed_fallback
+                    if not (
+                        hasattr(job, "url")
+                        and job.url
+                        and self._normalize_url(job.url) in urls_to_avoid
+                    )
                 ]
                 logger.debug(f"Parsed {len(all_found_jobs)} jobs from fallback search.")
             except Exception as e:
@@ -190,7 +220,11 @@ class ScoutAgent:
                 all_found_jobs = []
 
         # Update seen_jobs with newly found jobs (normalized)
-        new_seen = {self._normalize_url(job.url) for job in all_found_jobs if hasattr(job, "url") and job.url}
+        new_seen = {
+            self._normalize_url(job.url)
+            for job in all_found_jobs
+            if hasattr(job, "url") and job.url
+        }
         seen_jobs.update(new_seen)
 
         logger.info(f"[SCOUT] Found {len(all_found_jobs)} jobs.")

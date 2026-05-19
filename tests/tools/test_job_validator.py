@@ -3,6 +3,7 @@ from unittest.mock import patch, Mock
 import requests
 from src.tools.job_validator import JobValidator, JobOffer, ExpirationCheck
 
+
 class TestJobValidator:
     """
     Tests for the JobValidator class.
@@ -24,13 +25,13 @@ class TestJobValidator:
     @pytest.fixture
     def mock_requests_get(self):
         """Fixture to patch requests.get."""
-        with patch('requests.get') as mock_get:
+        with patch("requests.get") as mock_get:
             yield mock_get
 
     @pytest.fixture
     def mock_checker_invoke(self, validator):
         """Fixture to patch the checker.invoke method."""
-        with patch.object(validator.checker, 'invoke') as mock_invoke:
+        with patch.object(validator.checker, "invoke") as mock_invoke:
             yield mock_invoke
 
     def test_initialization(self, mock_llm):
@@ -41,19 +42,19 @@ class TestJobValidator:
         mock_llm.with_structured_output.assert_called_once_with(ExpirationCheck)
         assert validator.checker is not None
 
-    @pytest.mark.parametrize("invalid_url", [
-        "N/A",
-        "ftp://example.com",
-        "not-a-url"
-    ])
+    @pytest.mark.parametrize("invalid_url", ["N/A", "ftp://example.com", "not-a-url"])
     def test_invalid_url_format(self, validator, invalid_url):
         """
         Tests that is_job_valid returns False for invalid URL formats.
         """
-        job = JobOffer(id="test-id", title="Test Job", url=invalid_url, company="TestCo", location="Remote")
+        job = JobOffer(
+            id="test-id", title="Test Job", url=invalid_url, company="TestCo"
+        )
         assert not validator.is_job_valid(job)
 
-    def test_http_error_status_code(self, validator, mock_requests_get, mock_checker_invoke):
+    def test_http_error_status_code(
+        self, validator, mock_requests_get, mock_checker_invoke
+    ):
         """
         Tests that is_job_valid returns False when requests.get returns an HTTP error status.
         """
@@ -61,55 +62,91 @@ class TestJobValidator:
         mock_response.status_code = 404
         mock_requests_get.return_value = mock_response
 
-        job = JobOffer(id="test-id", title="Test Job", url="http://example.com/404", company="TestCo", location="Remote")
+        job = JobOffer(
+            id="test-id",
+            title="Test Job",
+            url="http://example.com/404",
+            company="TestCo",
+        )
         assert not validator.is_job_valid(job)
         mock_requests_get.assert_called_once()
-        mock_checker_invoke.assert_not_called() # LLM should not be called on HTTP error
+        mock_checker_invoke.assert_not_called()  # LLM should not be called on HTTP error
 
     def test_request_exception(self, validator, mock_requests_get, mock_checker_invoke):
         """
         Tests that is_job_valid returns False when requests.get raises a RequestException.
         """
-        mock_requests_get.side_effect = requests.exceptions.RequestException("Connection refused")
+        mock_requests_get.side_effect = requests.exceptions.RequestException(
+            "Connection refused"
+        )
 
-        job = JobOffer(id="test-id", title="Test Job", url="http://example.com/timeout", company="TestCo", location="Remote")
+        job = JobOffer(
+            id="test-id",
+            title="Test Job",
+            url="http://example.com/timeout",
+            company="TestCo",
+        )
         assert not validator.is_job_valid(job)
         mock_requests_get.assert_called_once()
-        mock_checker_invoke.assert_not_called() # LLM should not be called on request exception
+        mock_checker_invoke.assert_not_called()  # LLM should not be called on request exception
 
-    def test_llm_determines_inactive(self, validator, mock_requests_get, mock_checker_invoke):
+    def test_llm_determines_inactive(
+        self, validator, mock_requests_get, mock_checker_invoke
+    ):
         """
         Tests that is_job_valid returns False when the LLM determines the job is inactive.
         """
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.text = "<html><body>Job closed. Applications no longer accepted.</body></html>"
+        mock_response.text = (
+            "<html><body>Job closed. Applications no longer accepted.</body></html>"
+        )
         mock_requests_get.return_value = mock_response
 
-        mock_checker_invoke.return_value = ExpirationCheck(is_active=False, reason="Job is closed")
+        mock_checker_invoke.return_value = ExpirationCheck(
+            is_active=False, reason="Job is closed"
+        )
 
-        job = JobOffer(id="test-id", title="Test Job", url="http://example.com/closed", company="TestCo", location="Remote")
+        job = JobOffer(
+            id="test-id",
+            title="Test Job",
+            url="http://example.com/closed",
+            company="TestCo",
+        )
         assert not validator.is_job_valid(job)
         mock_requests_get.assert_called_once()
         mock_checker_invoke.assert_called_once()
 
-    def test_llm_determines_active(self, validator, mock_requests_get, mock_checker_invoke):
+    def test_llm_determines_active(
+        self, validator, mock_requests_get, mock_checker_invoke
+    ):
         """
         Tests that is_job_valid returns True when the LLM determines the job is active.
         """
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.text = "<html><body>Apply now for this exciting opportunity!</body></html>"
+        mock_response.text = (
+            "<html><body>Apply now for this exciting opportunity!</body></html>"
+        )
         mock_requests_get.return_value = mock_response
 
-        mock_checker_invoke.return_value = ExpirationCheck(is_active=True, reason="Job is active")
+        mock_checker_invoke.return_value = ExpirationCheck(
+            is_active=True, reason="Job is active"
+        )
 
-        job = JobOffer(id="test-id", title="Test Job", url="http://example.com/active", company="TestCo", location="Remote")
+        job = JobOffer(
+            id="test-id",
+            title="Test Job",
+            url="http://example.com/active",
+            company="TestCo",
+        )
         assert validator.is_job_valid(job)
         mock_requests_get.assert_called_once()
         mock_checker_invoke.assert_called_once()
 
-    def test_general_exception_during_validation(self, validator, mock_requests_get, mock_checker_invoke):
+    def test_general_exception_during_validation(
+        self, validator, mock_requests_get, mock_checker_invoke
+    ):
         """
         Tests that is_job_valid returns False for unexpected exceptions during the process.
         """
@@ -121,13 +158,22 @@ class TestJobValidator:
         mock_requests_get.return_value = mock_response
 
         # We'll mock the internal BeautifulSoup.get_text to raise an error
-        with patch('bs4.BeautifulSoup.get_text', side_effect=Exception("Parsing error")):
-            job = JobOffer(id="test-id", title="Test Job", url="http://example.com/malformed", company="TestCo", location="Remote")
+        with patch(
+            "bs4.BeautifulSoup.get_text", side_effect=Exception("Parsing error")
+        ):
+            job = JobOffer(
+                id="test-id",
+                title="Test Job",
+                url="http://example.com/malformed",
+                company="TestCo",
+            )
             assert not validator.is_job_valid(job)
             mock_requests_get.assert_called_once()
-            mock_checker_invoke.assert_not_called() # LLM should not be called if parsing fails
+            mock_checker_invoke.assert_not_called()  # LLM should not be called if parsing fails
 
-    def test_llm_invoke_exception(self, validator, mock_requests_get, mock_checker_invoke):
+    def test_llm_invoke_exception(
+        self, validator, mock_requests_get, mock_checker_invoke
+    ):
         """
         Tests that is_job_valid returns False if the LLM invocation fails.
         """
@@ -138,9 +184,15 @@ class TestJobValidator:
 
         mock_checker_invoke.side_effect = Exception("LLM service unavailable")
 
-        job = JobOffer(id="test-id", title="Test Job", url="http://example.com/llm-fail", company="TestCo", location="Remote")
+        job = JobOffer(
+            id="test-id",
+            title="Test Job",
+            url="http://example.com/llm-fail",
+            company="TestCo",
+        )
         assert not validator.is_job_valid(job)
         mock_requests_get.assert_called_once()
         # With retry logic, invoke is called max_retries times (default 2)
         from src.config.settings import config
+
         assert mock_checker_invoke.call_count == config.validator_max_retries

@@ -6,9 +6,11 @@ from src.config.logging import setup_logging
 from src.config.settings import config
 from loguru import logger
 
+
 def _configure_application():
     """Configures logging for the application."""
     setup_logging(debug=config.debug_mode)
+
 
 def _prepare_cv_data(cv_file_path: str, factory_instance):
     """Initializes the Vector Manager and ingests the CV."""
@@ -18,12 +20,15 @@ def _prepare_cv_data(cv_file_path: str, factory_instance):
         cv_manager.ingest_cv(cv_file_path)
         logger.info(f"CV from '{cv_file_path}' ingested successfully.")
     except FileNotFoundError:
-        logger.error(f"CV file not found at '{cv_file_path}'. Please check the path in config.py.")
+        logger.error(
+            f"CV file not found at '{cv_file_path}'. Please check the path in config.py."
+        )
         raise
     except Exception as e:
         logger.error(f"Error ingesting CV: {e}")
         raise
     return cv_manager
+
 
 def _initialize_state(cv_manager, app_config, user_prompt=config.initial_prompt):
     """Sets up the initial state for the LangGraph application."""
@@ -47,6 +52,7 @@ def _initialize_state(cv_manager, app_config, user_prompt=config.initial_prompt)
     )
     return initial_state
 
+
 def _run_graph(initial_state: dict, app_instance):
     """Invokes the LangGraph application with the initial state."""
     print("🚀 AgenticHire AI is starting...")
@@ -54,6 +60,7 @@ def _run_graph(initial_state: dict, app_instance):
     final_state = app_instance.invoke(initial_state)
     logger.info("LangGraph application finished successfully.")
     return final_state
+
 
 def _display_results(final_state: dict):
     """Prints a summary of the job search results."""
@@ -68,12 +75,15 @@ def _display_results(final_state: dict):
         return
 
     for job_id, content in apps.items():
-        print(f"\n📍 {content.get('job_title', 'N/A')} at {content.get('company', 'N/A')}")
+        print(
+            f"\n📍 {content.get('job_title', 'N/A')} at {content.get('company', 'N/A')}"
+        )
         if "founded_job_offer" in content:
             # Ensure 'founded_job_offer' is a string before slicing
-            offer_text = str(content['founded_job_offer'])
+            offer_text = str(content["founded_job_offer"])
             print(f"{offer_text[:500]}...")
         print("-" * 20)
+
 
 def main():
     _configure_application()

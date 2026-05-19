@@ -8,9 +8,12 @@ from io import BytesIO
 # Adjust import path based on project structure.
 # Assuming this test file is in 'tests/' and the source is in 'src/tools/'.
 from src.tools.vectordb import CVVectorManager
-from langchain_core.documents import Document # Used for mocking similarity_search results
+from langchain_core.documents import (
+    Document,
+)  # Used for mocking similarity_search results
 
 # --- Fixtures ---
+
 
 @pytest.fixture
 def mock_vision_model():
@@ -19,11 +22,13 @@ def mock_vision_model():
     mock_model.invoke.return_value.content = "Transcribed text from image."
     return mock_model
 
+
 @pytest.fixture
 def mock_embeddings():
     """Mocks an embeddings object."""
     mock_embed = MagicMock()
     return mock_embed
+
 
 @pytest.fixture
 def temp_db_path(tmp_path):
@@ -32,6 +37,7 @@ def temp_db_path(tmp_path):
     db_dir = tmp_path / "chroma_db"
     db_dir.mkdir(parents=True, exist_ok=True)
     return str(db_dir)
+
 
 @pytest.fixture
 def cv_manager(mock_vision_model, mock_embeddings, temp_db_path):
@@ -44,20 +50,26 @@ def cv_manager(mock_vision_model, mock_embeddings, temp_db_path):
     )
     return manager
 
+
 @pytest.fixture
 def mock_pdf_file(tmp_path):
     """Creates a dummy PDF file for testing."""
     dummy_pdf_path = tmp_path / "dummy.pdf"
     # Create a minimal dummy PDF content (not a real PDF, just for file existence and hash calculation)
     with open(dummy_pdf_path, "wb") as f:
-        f.write(b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Count 0>>endobj\nxref\n0 3\n0000000000 65535 f\n0000000009 00000 n\n0000000074 00000 n\ntrailer<</Size 3/Root 1 0 R>>startxref\n104\n%%EOF")
+        f.write(
+            b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Count 0>>endobj\nxref\n0 3\n0000000000 65535 f\n0000000009 00000 n\n0000000074 00000 n\ntrailer<</Size 3/Root 1 0 R>>startxref\n104\n%%EOF"
+        )
     return str(dummy_pdf_path)
+
 
 @pytest.fixture
 def mock_image_conversion():
     """Mocks pdf2image.convert_from_path and PIL.Image.save."""
-    with patch('src.tools.vectordb.convert_from_path') as mock_convert_from_path, \
-         patch('src.tools.vectordb.Image.Image.save') as mock_image_save:
+    with (
+        patch("src.tools.vectordb.convert_from_path") as mock_convert_from_path,
+        patch("src.tools.vectordb.Image.Image.save") as mock_image_save,
+    ):
         # Mock a PIL Image object
         mock_img = MagicMock()
         # Ensure the save method is mocked on the instance, not the class
@@ -66,24 +78,29 @@ def mock_image_conversion():
         mock_convert_from_path.return_value = [mock_img]
         yield mock_convert_from_path, mock_image_save
 
+
 @pytest.fixture
 def mock_chroma():
     """Mocks the Chroma class and its methods."""
-    with patch('src.tools.vectordb.Chroma') as mock_chroma_class:
+    with patch("src.tools.vectordb.Chroma") as mock_chroma_class:
         # Mock the instance returned by Chroma.from_documents and _init_vectorstore
         mock_instance = MagicMock()
         mock_instance.similarity_search.return_value = [
             Document(page_content="Chunk 1"),
             Document(page_content="Chunk 2"),
         ]
-        mock_instance.get.return_value = {"documents": ["Full text doc 1", "Full text doc 2"]}
+        mock_instance.get.return_value = {
+            "documents": ["Full text doc 1", "Full text doc 2"]
+        }
 
-        mock_chroma_class.return_value = mock_instance # For _init_vectorstore
-        mock_chroma_class.from_documents.return_value = mock_instance # For ingest_cv
+        mock_chroma_class.return_value = mock_instance  # For _init_vectorstore
+        mock_chroma_class.from_documents.return_value = mock_instance  # For ingest_cv
 
         yield mock_chroma_class, mock_instance
 
+
 # --- Tests ---
+
 
 def test_init(cv_manager, temp_db_path):
     """Test that the CVVectorManager initializes correctly."""
@@ -93,6 +110,7 @@ def test_init(cv_manager, temp_db_path):
     assert cv_manager.embeddings is not None
     assert cv_manager._vectorstore is None
     assert cv_manager.hash_file_path == os.path.join(temp_db_path, "cv_hash.txt")
+
 
 def test_calculate_file_hash(tmp_path):
     """Test the static method for calculating file SHA256 hash."""
@@ -104,6 +122,7 @@ def test_calculate_file_hash(tmp_path):
     expected_hash = hashlib.sha256(file_content).hexdigest()
     actual_hash = CVVectorManager._calculate_file_hash(str(test_file))
     assert actual_hash == expected_hash
+
 
 def test_pdf_to_base64_images_success(mock_image_conversion, mock_pdf_file):
     """Test successful conversion of PDF to base64 images."""
@@ -124,6 +143,7 @@ def test_pdf_to_base64_images_success(mock_image_conversion, mock_pdf_file):
     except Exception:
         pytest.fail("Returned string is not valid base64")
 
+
 def test_pdf_to_base64_images_error(mock_image_conversion, mock_pdf_file):
     """Test error handling during PDF to image conversion."""
     mock_convert_from_path, _ = mock_image_conversion
@@ -132,12 +152,23 @@ def test_pdf_to_base64_images_error(mock_image_conversion, mock_pdf_file):
     with pytest.raises(Exception, match="PDF conversion failed"):
         CVVectorManager._pdf_to_base64_images(mock_pdf_file)
 
+
 def test_ingest_cv_file_not_found(cv_manager):
     """Test that ingest_cv raises FileNotFoundError for non-existent files."""
-    with pytest.raises(FileNotFoundError, match="Resume not found at: non_existent.pdf"):
+    with pytest.raises(
+        FileNotFoundError, match="Resume not found at: non_existent.pdf"
+    ):
         cv_manager.ingest_cv("non_existent.pdf")
 
-def test_ingest_cv_first_time_success(cv_manager, mock_pdf_file, mock_image_conversion, mock_vision_model, mock_chroma, temp_db_path):
+
+def test_ingest_cv_first_time_success(
+    cv_manager,
+    mock_pdf_file,
+    mock_image_conversion,
+    mock_vision_model,
+    mock_chroma,
+    temp_db_path,
+):
     """Test successful first-time ingestion of a CV."""
     mock_convert_from_path, mock_image_save = mock_image_conversion
     mock_chroma_class, mock_chroma_instance = mock_chroma
@@ -159,8 +190,12 @@ def test_ingest_cv_first_time_success(cv_manager, mock_pdf_file, mock_image_conv
 
     # Assertions for ChromaDB creation
     mock_chroma_class.from_documents.assert_called_once()
-    _, kwargs = mock_chroma_class.from_documents.call_args # Use _ for unused positional args
-    assert "Transcribed text from image." in kwargs["documents"][0].page_content # Check if the transcribed text is passed
+    _, kwargs = (
+        mock_chroma_class.from_documents.call_args
+    )  # Use _ for unused positional args
+    assert (
+        "Transcribed text from image." in kwargs["documents"][0].page_content
+    )  # Check if the transcribed text is passed
     assert kwargs["embedding"] == cv_manager.embeddings
     assert kwargs["persist_directory"] == temp_db_path
     assert kwargs["collection_name"] == "test_cv_collection"
@@ -179,7 +214,15 @@ def test_ingest_cv_first_time_success(cv_manager, mock_pdf_file, mock_image_conv
         cached_text = f.read()
     assert "Transcribed text from image." in cached_text
 
-def test_ingest_cv_cached_unchanged(cv_manager, mock_pdf_file, mock_image_conversion, mock_vision_model, mock_chroma, temp_db_path):
+
+def test_ingest_cv_cached_unchanged(
+    cv_manager,
+    mock_pdf_file,
+    mock_image_conversion,
+    mock_vision_model,
+    mock_chroma,
+    temp_db_path,
+):
     """Test that ingestion is skipped if the file is unchanged and ChromaDB exists."""
     mock_convert_from_path, _ = mock_image_conversion
     mock_chroma_class, mock_chroma_instance = mock_chroma
@@ -208,7 +251,15 @@ def test_ingest_cv_cached_unchanged(cv_manager, mock_pdf_file, mock_image_conver
     )
     assert cv_manager._vectorstore == mock_chroma_instance
 
-def test_ingest_cv_reingest_on_change(cv_manager, mock_pdf_file, mock_image_conversion, mock_vision_model, mock_chroma, temp_db_path):
+
+def test_ingest_cv_reingest_on_change(
+    cv_manager,
+    mock_pdf_file,
+    mock_image_conversion,
+    mock_vision_model,
+    mock_chroma,
+    temp_db_path,
+):
     """Test that ingestion occurs if the file has changed."""
     mock_convert_from_path, mock_image_save = mock_image_conversion
     mock_chroma_class, mock_chroma_instance = mock_chroma
@@ -232,7 +283,15 @@ def test_ingest_cv_reingest_on_change(cv_manager, mock_pdf_file, mock_image_conv
     assert updated_hash == CVVectorManager._calculate_file_hash(mock_pdf_file)
     assert updated_hash != "old_hash_different_from_new_one"
 
-def test_ingest_cv_text_cache_fallback(cv_manager, mock_pdf_file, mock_image_conversion, mock_vision_model, mock_chroma, temp_db_path):
+
+def test_ingest_cv_text_cache_fallback(
+    cv_manager,
+    mock_pdf_file,
+    mock_image_conversion,
+    mock_vision_model,
+    mock_chroma,
+    temp_db_path,
+):
     """Test that Vision LLM is skipped when hash matches and text cache exists (ChromaDB missing)."""
     mock_convert_from_path, _ = mock_image_conversion
     mock_chroma_class, mock_chroma_instance = mock_chroma
@@ -279,6 +338,7 @@ def test_get_context_initial_load(cv_manager, mock_chroma):
     assert context == "Chunk 1\n---\nChunk 2"
     assert cv_manager._vectorstore == mock_chroma_instance
 
+
 def test_get_context_already_loaded(cv_manager, mock_chroma):
     """Test get_context when the vectorstore is already loaded."""
     mock_chroma_class, mock_chroma_instance = mock_chroma
@@ -294,6 +354,7 @@ def test_get_context_already_loaded(cv_manager, mock_chroma):
     mock_chroma_class.assert_not_called()
     mock_chroma_instance.similarity_search.assert_called_once_with(query, k=k)
     assert context == "Chunk 1\n---\nChunk 2"
+
 
 def test_get_full_resume_text_initial_load(cv_manager, mock_chroma):
     """Test get_full_resume_text when the vectorstore needs to be initialized."""
@@ -311,6 +372,7 @@ def test_get_full_resume_text_initial_load(cv_manager, mock_chroma):
     mock_chroma_instance.get.assert_called()
     assert full_text == "Full text doc 1\nFull text doc 2"
     assert cv_manager._vectorstore == mock_chroma_instance
+
 
 def test_get_full_resume_text_already_loaded(cv_manager, mock_chroma):
     """Test get_full_resume_text when the vectorstore is already loaded."""

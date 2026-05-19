@@ -1,7 +1,8 @@
 import pytest
 from unittest.mock import patch, Mock
-import requests # Import requests to access its exceptions
+import requests  # Import requests to access its exceptions
 from src.tools.scrape import scrape_webpage_tool
+
 
 class TestScrapeWebpageTool:
     """
@@ -34,15 +35,19 @@ class TestScrapeWebpageTool:
             </body>
         </html>
         """
-        expected_text = "Test Page\nJob Title\nThis is a job description.\nMore\ndetails\nhere."
+        expected_text = (
+            "Test Page\nJob Title\nThis is a job description.\nMore\ndetails\nhere."
+        )
 
-        with patch('requests.get', return_value=mock_response) as mock_get:
+        with patch("requests.get", return_value=mock_response) as mock_get:
             result = scrape_webpage_tool._run(test_url, config={})
 
             mock_get.assert_called_once_with(
                 test_url,
-                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"},
-                timeout=10
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                },
+                timeout=10,
             )
             assert result == expected_text
             assert len(result) <= 10000
@@ -52,13 +57,18 @@ class TestScrapeWebpageTool:
         Tests that scrape_webpage_tool handles connection errors gracefully.
         """
         test_url = "http://nonexistent.com"
-        with patch('requests.get', side_effect=requests.exceptions.RequestException("Connection refused")) as mock_get:
+        with patch(
+            "requests.get",
+            side_effect=requests.exceptions.RequestException("Connection refused"),
+        ) as mock_get:
             result = scrape_webpage_tool._run(test_url, config={})
 
             mock_get.assert_called_once_with(
                 test_url,
-                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"},
-                timeout=10
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                },
+                timeout=10,
             )
             assert f"Error fetching webpage {test_url}" in result
             assert "Connection refused" in result
@@ -73,13 +83,15 @@ class TestScrapeWebpageTool:
             "404 Client Error: Not Found for url: http://example.com/404"
         )
 
-        with patch('requests.get', return_value=mock_response) as mock_get:
+        with patch("requests.get", return_value=mock_response) as mock_get:
             result = scrape_webpage_tool._run(test_url, config={})
 
             mock_get.assert_called_once_with(
                 test_url,
-                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"},
-                timeout=10
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                },
+                timeout=10,
             )
             assert f"Error fetching webpage {test_url}" in result
             assert "404 Client Error" in result
@@ -89,8 +101,10 @@ class TestScrapeWebpageTool:
         Tests that scrape_webpage_tool returns an empty string for a page with no text content.
         """
         test_url = "http://example.com/empty"
-        mock_response.text = "<html><body><script></script><style></style></body></html>"
-        with patch('requests.get', return_value=mock_response):
+        mock_response.text = (
+            "<html><body><script></script><style></style></body></html>"
+        )
+        with patch("requests.get", return_value=mock_response):
             result = scrape_webpage_tool._run(test_url, config={})
             assert result == ""
 
@@ -99,10 +113,10 @@ class TestScrapeWebpageTool:
         Tests that the output is truncated to 10000 characters.
         """
         test_url = "http://example.com/long"
-        long_text = "a" * 15000 # Create a string longer than 10000
+        long_text = "a" * 15000  # Create a string longer than 10000
         mock_response.text = f"<html><body>{long_text}</body></html>"
 
-        with patch('requests.get', return_value=mock_response):
+        with patch("requests.get", return_value=mock_response):
             result = scrape_webpage_tool._run(test_url, config={})
             assert len(result) == 10000
             assert result == "a" * 10000

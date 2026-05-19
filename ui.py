@@ -14,7 +14,6 @@ from src.config.settings import config
 from src.agents.agents import get_agent_factory
 from src.graph import build_graph
 
-
 # --- PAGE CONFIG ---
 st.set_page_config(layout="wide", page_title="AGENTIC HIRE AI")
 
@@ -42,7 +41,8 @@ def get_base64_image(image_path):
 
 # --- CSS ---
 def inject_layout_css(img_base64):
-    st.markdown(f"""
+    st.markdown(
+        f"""
     <style>
 
     .bg-img-container {{
@@ -208,7 +208,9 @@ def inject_layout_css(img_base64):
     <div class="bg-img-container">
         <img src="data:image/png;base64,{img_base64}">
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 
 # --- TERMINAL RENDERER ---
@@ -238,7 +240,7 @@ def render_terminal(placeholder, logs):
                     "scout": "[SCOUT]",
                     "tailor": "[TAILOR]",
                     "orchestrator": "[ORCHESTRATOR]",
-                    "system": "[SYS_MSG]"
+                    "system": "[SYS_MSG]",
                 }.get(agent, "LOG")
 
                 # Single markdown call for the whole row ensures no Streamlit column padding
@@ -252,8 +254,9 @@ def render_terminal(placeholder, logs):
                         </div>
                     </div>
                     """,
-                    unsafe_allow_html=True
+                    unsafe_allow_html=True,
                 )
+
 
 # --- LOG SINK ---
 class StreamlitLogSink:
@@ -273,7 +276,7 @@ class StreamlitLogSink:
             level = "ERROR"
         elif "[WARNING]" in clean.upper() or "[WARN]" in clean.upper():
             level = "WARNING"
-            
+
         if level == "CRITICAL":
             level = "ERROR"
 
@@ -300,9 +303,7 @@ class StreamlitLogSink:
 
     def __enter__(self):
         self.handler_id = logger.add(
-            self,
-            format="{time:HH:mm:ss} | {message}",
-            level="INFO"
+            self, format="{time:HH:mm:ss} | {message}", level="INFO"
         )
         return self
 
@@ -331,7 +332,7 @@ def streamlit_app():
             "Search Parameters:",
             height=120,
             value=f"{config.initial_prompt}",
-            key="criteria"
+            key="criteria",
         )
 
         c1, c2 = st.columns(2)
@@ -345,7 +346,9 @@ def streamlit_app():
         if stop:
             st.session_state.cancel_requested = True
             st.session_state.running = False
-            st.session_state.logs.append(("system", "[SYSTEM] Aborted by user.", None, "WARNING"))
+            st.session_state.logs.append(
+                ("system", "[SYSTEM] Aborted by user.", None, "WARNING")
+            )
             status_placeholder.warning("Process stopped.")
             st.stop()
 
@@ -374,8 +377,10 @@ def streamlit_app():
 
                     cv_manager = _prepare_cv_data(cv_path, get_agent_factory())
 
-                    state = _initialize_state(cv_manager, config, user_prompt=st.session_state.criteria)
-                    
+                    state = _initialize_state(
+                        cv_manager, config, user_prompt=st.session_state.criteria
+                    )
+
                     # Inject the user's search criteria into the graph state
                     # (Note: Update "search_parameters" to match your actual LangGraph state schema)
                     state["search_parameters"] = st.session_state.criteria
@@ -392,7 +397,7 @@ def streamlit_app():
             finally:
                 if cv_path and os.path.exists(cv_path):
                     os.remove(cv_path)
-                
+
                 # Guarantee final render of logs even if the last ones were throttled
                 render_terminal(terminal_placeholder, st.session_state.logs)
 
@@ -408,12 +413,15 @@ def streamlit_app():
             apps = st.session_state.final_state.get("applications", {})
 
             for _, content in apps.items():
-                st.markdown(f"""
+                st.markdown(
+                    f"""
                 <div class="glass-panel">
                     <h4>{content.get('job_title')} / {content.get('company')}</h4>
                     <p>{content.get('founded_job_offer')}</p>
                 </div>
-                """, unsafe_allow_html=True)
+                """,
+                    unsafe_allow_html=True,
+                )
 
 
 if __name__ == "__main__":

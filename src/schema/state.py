@@ -2,6 +2,7 @@ from typing import Annotated, List, TypedDict, Optional
 import operator
 from pydantic import BaseModel, Field
 
+
 class JobOffer(BaseModel):
     """
     Structured model for a single job posting.
@@ -11,7 +12,9 @@ class JobOffer(BaseModel):
     id: str = Field(..., description="Unique identifier for the job post")
     title: str = Field(description="Job title")
     company: str = Field(description="Company name")
-    description: str = Field(None, description="Full text of the job description")
+    description: Optional[str] = Field(
+        default=None, description="Full text of the job description"
+    )
     url: str = Field(description="Direct link to the posting")
     salary_range: Optional[str] = Field(
         default="N/A", description="Salary info if available"

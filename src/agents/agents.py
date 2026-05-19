@@ -32,7 +32,9 @@ class AgentFactory:
             vision_model=vision_model, embeddings=embeddings
         )
 
-        scout_llm = ChatOpenAI(model=config.scout_model_name, temperature=0, **common_params)
+        scout_llm = ChatOpenAI(
+            model=config.scout_model_name, temperature=0, **common_params
+        )
 
         orchestrator_llm = ChatOpenAI(
             model=config.orchestrator_model_name, temperature=0, **common_params

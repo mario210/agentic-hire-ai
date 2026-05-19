@@ -2,21 +2,25 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from typing import Optional
 
+
 class AppConfig(BaseSettings):
     """
     Application configuration settings.
     Loads environment variables from .env file.
     """
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         env_prefix="AGENTIC_HIRE_",  # Optional prefix for env vars
         case_sensitive=False,
-        extra='ignore',  # Ignore extra env vars not in the model
+        extra="ignore",  # Ignore extra env vars not in the model
     )
 
     # General settings
-    debug_mode: bool = Field(True, description="Enable debug mode for more verbose logging and features.")
+    debug_mode: bool = Field(
+        True, description="Enable debug mode for more verbose logging and features."
+    )
 
     # API configuration
     openrouter_base_url: str = Field("https://openrouter.ai/api/v1")
@@ -24,23 +28,42 @@ class AppConfig(BaseSettings):
     oriosearch_base_url: str = Field("http://localhost:8000")
 
     # AgenticHire AI specific settings
-    max_valid_offers: int = Field(3, description="Maximum number of valid job offers to process.")
-    max_scout_runs: int = Field(5, description="Maximum number of iterations for the job scout agent.")
-    scout_max_iterations: int = Field(3, description="Max LLM interaction iterations per scout run.")
-    scout_rate_limit_delay: float = Field(0.5, description="Delay (seconds) between scout tool calls to avoid rate limiting.")
+    max_valid_offers: int = Field(
+        3, description="Maximum number of valid job offers to process."
+    )
+    max_scout_runs: int = Field(
+        5, description="Maximum number of iterations for the job scout agent."
+    )
+    scout_max_iterations: int = Field(
+        3, description="Max LLM interaction iterations per scout run."
+    )
+    scout_rate_limit_delay: float = Field(
+        0.5,
+        description="Delay (seconds) between scout tool calls to avoid rate limiting.",
+    )
     initial_prompt: str = Field(
         "Python Developer or AI Engineer roles. "
         "No Architect, Team Leader or Senior level. "
         "Only consider jobs that are fully remote within Poland or offer hybrid work in Warsaw. "
         "Exclude roles that primarily require Java or non-Python technologies."
     )
-    cv_file_path: str = Field("data/cv/sample_cv.pdf", description="Path to the CV file.")
+    cv_file_path: str = Field(
+        "data/cv/sample_cv.pdf", description="Path to the CV file."
+    )
 
     # Job validator settings
-    validator_timeout: int = Field(10, description="HTTP timeout in seconds for job validation requests.")
-    validator_content_max_chars: int = Field(6000, description="Max characters to analyze for expiration detection.")
-    validator_max_retries: int = Field(2, description="Max retries for failed LLM validation calls.")
-    validator_cache_enabled: bool = Field(True, description="Cache job validation results.")
+    validator_timeout: int = Field(
+        10, description="HTTP timeout in seconds for job validation requests."
+    )
+    validator_content_max_chars: int = Field(
+        6000, description="Max characters to analyze for expiration detection."
+    )
+    validator_max_retries: int = Field(
+        2, description="Max retries for failed LLM validation calls."
+    )
+    validator_cache_enabled: bool = Field(
+        True, description="Cache job validation results."
+    )
 
     # LLM settings
     orchestrator_model_name: str = Field("openai/gpt-4o-mini")

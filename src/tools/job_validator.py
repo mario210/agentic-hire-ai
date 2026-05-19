@@ -28,7 +28,9 @@ class JobValidator:
         Initialize the JobValidator with an LLM instance.
         """
         self.checker = llm.with_structured_output(ExpirationCheck)
-        self.validation_cache: Dict[str, bool] = {} if config.validator_cache_enabled else {}
+        self.validation_cache: Dict[str, bool] = (
+            {} if config.validator_cache_enabled else {}
+        )
 
     def is_job_valid(self, job: JobOffer) -> bool:
         if not job.url or job.url == "N/A" or not job.url.startswith("http"):
@@ -48,11 +50,15 @@ class JobValidator:
             }
 
             # HTTP request with configurable timeout
-            response = requests.get(job.url, headers=headers, timeout=config.validator_timeout)
+            response = requests.get(
+                job.url, headers=headers, timeout=config.validator_timeout
+            )
 
             # Check for dead links (404, 500, etc.)
             if response.status_code >= 400:
-                logger.warning(f"HTTP Error {response.status_code} when accessing {job.url}")
+                logger.warning(
+                    f"HTTP Error {response.status_code} when accessing {job.url}"
+                )
                 if config.validator_cache_enabled:
                     self.validation_cache[job.url] = False
                 return False
@@ -63,7 +69,7 @@ class JobValidator:
                 script.decompose()
 
             text_content = soup.get_text(separator=" ", strip=True)
-            text_to_analyze = text_content[:config.validator_content_max_chars]
+            text_to_analyze = text_content[: config.validator_content_max_chars]
 
             # Retry logic for LLM call
             result = self._invoke_llm_with_retry(job.title, text_to_analyze)
@@ -94,7 +100,9 @@ class JobValidator:
             logger.error(f"Validation error for {job.url}: {str(e)}")
             return False
 
-    def _invoke_llm_with_retry(self, job_title: str, text_to_analyze: str) -> Optional[ExpirationCheck]:
+    def _invoke_llm_with_retry(
+        self, job_title: str, text_to_analyze: str
+    ) -> Optional[ExpirationCheck]:
         """Invoke LLM with exponential backoff retry logic."""
         prompt = f"""
             Analyze the following text extracted from a job posting webpage.
@@ -107,14 +115,18 @@ class JobValidator:
 
         for attempt in range(config.validator_max_retries):
             try:
-                logger.debug(f"LLM expiration check for '{job_title}' (attempt {attempt + 1})")
+                logger.debug(
+                    f"LLM expiration check for '{job_title}' (attempt {attempt + 1})"
+                )
                 result = self.checker.invoke(prompt)
                 return result
             except Exception as e:
                 if attempt < config.validator_max_retries - 1:
-                    backoff = 2 ** attempt
+                    backoff = 2**attempt
                     logger.warning(f"LLM call failed, retrying in {backoff}s: {str(e)}")
                     time.sleep(backoff)
                 else:
-                    logger.error(f"LLM call failed after {config.validator_max_retries} attempts: {str(e)}")
+                    logger.error(
+                        f"LLM call failed after {config.validator_max_retries} attempts: {str(e)}"
+                    )
                     return None

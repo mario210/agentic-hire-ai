@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from langchain_openai import OpenAIEmbeddings
@@ -7,23 +8,21 @@ from src.config.settings import config
 
 DB_PATH = "../data/chroma_db"
 
+
 def inspect_db():
     common_params = {
         "base_url": config.openrouter_base_url,
-        "api_key": config.openrouter_api_key
+        "api_key": config.openrouter_api_key,
     }
 
     # Initialize embeddings
-    embeddings = OpenAIEmbeddings(
-        model=config.embedded_model_name,
-        **common_params
-    )
+    embeddings = OpenAIEmbeddings(model=config.embedded_model_name, **common_params)
 
     # Load Chroma DB
     db = Chroma(
         persist_directory=DB_PATH,
         embedding_function=embeddings,
-        collection_name="cv_collection"
+        collection_name="cv_collection",
     )
 
     # 1. Get all raw data

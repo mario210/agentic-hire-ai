@@ -16,7 +16,10 @@ except ImportError:
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter
+from langchain_text_splitters import (
+    RecursiveCharacterTextSplitter,
+    MarkdownHeaderTextSplitter,
+)
 from langchain_chroma import Chroma
 
 
@@ -142,17 +145,23 @@ class CVVectorManager:
             return
 
         if hash_matches and os.path.exists(self.cv_text_cache_path):
-            print("✅ CV unchanged. Re-embedding from text cache (skipping Vision LLM)...")
+            print(
+                "✅ CV unchanged. Re-embedding from text cache (skipping Vision LLM)..."
+            )
             with open(self.cv_text_cache_path, "r") as f:
                 full_text = f.read()
             print(f"✅ Text loaded from cache ({len(full_text)} chars)")
         else:
             print("👁️ Reading CV via Vision model...")
             base64_images = self._pdf_to_base64_images(file_path)
-            page_data = [(i, img, len(base64_images)) for i, img in enumerate(base64_images)]
+            page_data = [
+                (i, img, len(base64_images)) for i, img in enumerate(base64_images)
+            ]
 
             with ThreadPoolExecutor() as executor:
-                clean_text_parts = list(executor.map(self._process_single_page, page_data))
+                clean_text_parts = list(
+                    executor.map(self._process_single_page, page_data)
+                )
 
             full_text = "\n\n".join(clean_text_parts)
             full_text = self._normalize_bullets(full_text)

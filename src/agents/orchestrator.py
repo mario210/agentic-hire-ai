@@ -38,7 +38,9 @@ class OrchestratorAgent:
         logger.debug(f"Orchestrator evaluating {len(valid_jobs)} valid jobs.")
 
         for job in valid_jobs:
-            logger.info(f"[ORCHESTRATOR] Analyzing job match: {job.title} at {job.company}...")
+            logger.info(
+                f"[ORCHESTRATOR] Analyzing job match: {job.title} at {job.company}..."
+            )
 
             # 1. RAG Step: Get specific context from CV for THIS job
             # We search for the job title and description in our vectors

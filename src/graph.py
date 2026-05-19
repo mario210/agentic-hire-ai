@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph, END
 from src.schema.state import AgenticHireState
-from src.agents.agents import get_agent_factory # Import the getter function
+from src.agents.agents import get_agent_factory  # Import the getter function
 from src.config.settings import config
 from loguru import logger
 
@@ -87,7 +87,7 @@ def build_graph():
     workflow.add_node("validate_jobs", validate_and_limit_jobs_node)
     workflow.add_node("orchestrator", factory.orchestrator)
     workflow.add_node("tailor", factory.tailor)
-    
+
     # 4. Set the Entry Point
     workflow.set_entry_point("scout")
 
@@ -109,4 +109,3 @@ def build_graph():
 
     # 6. Compile the graph
     return workflow.compile()
-

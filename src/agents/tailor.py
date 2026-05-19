@@ -20,7 +20,9 @@ class TailorAgent:
         resume_context = state.get("resume_context", "")
 
         if not shortlisted_jobs:
-            logger.warning("[TAILOR] No shortlisted jobs found. Tailor has nothing to do.")
+            logger.warning(
+                "[TAILOR] No shortlisted jobs found. Tailor has nothing to do."
+            )
             return {"status": "Tailor skipped: No jobs to process."}
 
         applications = {}
