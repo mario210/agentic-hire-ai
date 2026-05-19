@@ -41,7 +41,9 @@ def temp_db_path(tmp_path: Any) -> str:
 
 
 @pytest.fixture
-def cv_manager(mock_vision_model: MagicMock, mock_embeddings: MagicMock, temp_db_path: str) -> CVVectorManager:
+def cv_manager(
+    mock_vision_model: MagicMock, mock_embeddings: MagicMock, temp_db_path: str
+) -> CVVectorManager:
     """Provides an instance of CVVectorManager."""
     manager = CVVectorManager(
         vision_model=mock_vision_model,
@@ -125,7 +127,9 @@ def test_calculate_file_hash(tmp_path: Any) -> None:
     assert actual_hash == expected_hash
 
 
-def test_pdf_to_base64_images_success(mock_image_conversion: Tuple[Any, Any], mock_pdf_file: str) -> None:
+def test_pdf_to_base64_images_success(
+    mock_image_conversion: Tuple[Any, Any], mock_pdf_file: str
+) -> None:
     """Test successful conversion of PDF to base64 images."""
     mock_convert_from_path, mock_image_save = mock_image_conversion
     base64_images = CVVectorManager._pdf_to_base64_images(mock_pdf_file)
@@ -145,7 +149,9 @@ def test_pdf_to_base64_images_success(mock_image_conversion: Tuple[Any, Any], mo
         pytest.fail("Returned string is not valid base64")
 
 
-def test_pdf_to_base64_images_error(mock_image_conversion: Tuple[Any, Any], mock_pdf_file: str) -> None:
+def test_pdf_to_base64_images_error(
+    mock_image_conversion: Tuple[Any, Any], mock_pdf_file: str
+) -> None:
     """Test error handling during PDF to image conversion."""
     mock_convert_from_path, _ = mock_image_conversion
     mock_convert_from_path.side_effect = Exception("PDF conversion failed")
@@ -320,7 +326,9 @@ def test_ingest_cv_text_cache_fallback(
     assert "Some Job" in combined or "Did stuff" in combined
 
 
-def test_get_context_initial_load(cv_manager: CVVectorManager, mock_chroma: Tuple[Any, Any]) -> None:
+def test_get_context_initial_load(
+    cv_manager: CVVectorManager, mock_chroma: Tuple[Any, Any]
+) -> None:
     """Test get_context when the vectorstore needs to be initialized."""
     mock_chroma_class, mock_chroma_instance = mock_chroma
     with open(cv_manager.hash_file_path, "w") as f:
@@ -340,7 +348,9 @@ def test_get_context_initial_load(cv_manager: CVVectorManager, mock_chroma: Tupl
     assert cv_manager._vectorstore == mock_chroma_instance
 
 
-def test_get_context_already_loaded(cv_manager: CVVectorManager, mock_chroma: Tuple[Any, Any]) -> None:
+def test_get_context_already_loaded(
+    cv_manager: CVVectorManager, mock_chroma: Tuple[Any, Any]
+) -> None:
     """Test get_context when the vectorstore is already loaded."""
     mock_chroma_class, mock_chroma_instance = mock_chroma
     # Manually set _vectorstore to simulate it being loaded
@@ -357,7 +367,9 @@ def test_get_context_already_loaded(cv_manager: CVVectorManager, mock_chroma: Tu
     assert context == "Chunk 1\n---\nChunk 2"
 
 
-def test_get_full_resume_text_initial_load(cv_manager: CVVectorManager, mock_chroma: Tuple[Any, Any]) -> None:
+def test_get_full_resume_text_initial_load(
+    cv_manager: CVVectorManager, mock_chroma: Tuple[Any, Any]
+) -> None:
     """Test get_full_resume_text when the vectorstore needs to be initialized."""
     mock_chroma_class, mock_chroma_instance = mock_chroma
     with open(cv_manager.hash_file_path, "w") as f:
@@ -375,7 +387,9 @@ def test_get_full_resume_text_initial_load(cv_manager: CVVectorManager, mock_chr
     assert cv_manager._vectorstore == mock_chroma_instance
 
 
-def test_get_full_resume_text_already_loaded(cv_manager: CVVectorManager, mock_chroma: Tuple[Any, Any]) -> None:
+def test_get_full_resume_text_already_loaded(
+    cv_manager: CVVectorManager, mock_chroma: Tuple[Any, Any]
+) -> None:
     """Test get_full_resume_text when the vectorstore is already loaded."""
     mock_chroma_class, mock_chroma_instance = mock_chroma
     # Manually set _vectorstore to simulate it being loaded

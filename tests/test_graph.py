@@ -36,7 +36,9 @@ def mock_job_offer() -> JobOffer:
 
 
 @patch("src.graph.config")
-def test_should_rescout_max_runs_reached(mock_config: Any, initial_state: AgenticHireState) -> None:
+def test_should_rescout_max_runs_reached(
+    mock_config: Any, initial_state: AgenticHireState
+) -> None:
     mock_config.max_scout_runs = 2
     state = cast(AgenticHireState, {**initial_state, "scout_runs": 2})
     assert should_rescout(state) == "proceed"
@@ -55,14 +57,18 @@ def test_should_rescout_max_valid_jobs_reached(
 
 
 @patch("src.graph.config")
-def test_should_rescout_no_jobs_found_after_first_run(mock_config: Any, initial_state: AgenticHireState) -> None:
+def test_should_rescout_no_jobs_found_after_first_run(
+    mock_config: Any, initial_state: AgenticHireState
+) -> None:
     mock_config.max_scout_runs = 5
     state = cast(AgenticHireState, {**initial_state, "found_jobs": [], "scout_runs": 1})
     assert should_rescout(state) == "end"
 
 
 @patch("src.graph.config")
-def test_should_rescout_no_jobs_found_initial_run(mock_config: Any, initial_state: AgenticHireState) -> None:
+def test_should_rescout_no_jobs_found_initial_run(
+    mock_config: Any, initial_state: AgenticHireState
+) -> None:
     # If no jobs found on initial run (scout_runs=0), it should still rescout
     mock_config.max_scout_runs = 1
     state = cast(AgenticHireState, {**initial_state, "found_jobs": [], "scout_runs": 0})
@@ -74,7 +80,9 @@ def test_should_rescout_no_jobs_found_initial_run(mock_config: Any, initial_stat
 
 @patch("src.graph.get_agent_factory")  # Patch the getter function
 def test_validate_and_limit_jobs_node_all_valid(
-    mock_get_agent_factory: Any, initial_state: AgenticHireState, mock_job_offer: JobOffer
+    mock_get_agent_factory: Any,
+    initial_state: AgenticHireState,
+    mock_job_offer: JobOffer,
 ) -> None:
     mock_factory_instance = MagicMock()
     mock_get_agent_factory.return_value = mock_factory_instance
@@ -100,7 +108,9 @@ def test_validate_and_limit_jobs_node_all_valid(
 
 @patch("src.graph.get_agent_factory")  # Patch the getter function
 def test_validate_and_limit_jobs_node_some_invalid(
-    mock_get_agent_factory: Any, initial_state: AgenticHireState, mock_job_offer: JobOffer
+    mock_get_agent_factory: Any,
+    initial_state: AgenticHireState,
+    mock_job_offer: JobOffer,
 ) -> None:
     job1 = mock_job_offer.model_copy(update={"id": "job1"})
     job2 = mock_job_offer.model_copy(update={"id": "job2"})
@@ -131,7 +141,9 @@ def test_validate_and_limit_jobs_node_some_invalid(
 
 @patch("src.graph.get_agent_factory")  # Patch the getter function
 def test_validate_and_limit_jobs_node_limit_applied(
-    mock_get_agent_factory: Any, initial_state: AgenticHireState, mock_job_offer: JobOffer
+    mock_get_agent_factory: Any,
+    initial_state: AgenticHireState,
+    mock_job_offer: JobOffer,
 ) -> None:
     mock_factory_instance = MagicMock()
     mock_get_agent_factory.return_value = mock_factory_instance
@@ -154,7 +166,9 @@ def test_validate_and_limit_jobs_node_limit_applied(
 
 
 @patch("src.graph.get_agent_factory")  # Patch the getter function
-def test_validate_and_limit_jobs_node_no_jobs(mock_get_agent_factory: Any, initial_state: AgenticHireState) -> None:
+def test_validate_and_limit_jobs_node_no_jobs(
+    mock_get_agent_factory: Any, initial_state: AgenticHireState
+) -> None:
     mock_factory_instance = MagicMock()
     mock_get_agent_factory.return_value = mock_factory_instance
 

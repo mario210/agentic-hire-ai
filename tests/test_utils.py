@@ -26,7 +26,9 @@ def mock_chat_openai() -> Generator[Tuple[MagicMock, MagicMock], None, None]:
 # --- Tests for JobParser ---
 
 
-def test_job_parser_initialization(mock_config: MagicMock, mock_chat_openai: Tuple[MagicMock, MagicMock]) -> None:
+def test_job_parser_initialization(
+    mock_config: MagicMock, mock_chat_openai: Tuple[MagicMock, MagicMock]
+) -> None:
     mock_llm_class, mock_llm_instance = mock_chat_openai
 
     parser = JobParser(model_name="test-model")
@@ -44,7 +46,9 @@ def test_job_parser_initialization(mock_config: MagicMock, mock_chat_openai: Tup
     )
 
 
-def test_job_parser_parse_success(mock_config: MagicMock, mock_chat_openai: Tuple[MagicMock, MagicMock]) -> None:
+def test_job_parser_parse_success(
+    mock_config: MagicMock, mock_chat_openai: Tuple[MagicMock, MagicMock]
+) -> None:
     _, mock_llm_instance = mock_chat_openai
 
     # Setup mock for structured_llm.invoke
@@ -91,7 +95,9 @@ def test_job_parser_parse_success(mock_config: MagicMock, mock_chat_openai: Tupl
     assert parsed_jobs == expected_job_offers
 
 
-def test_job_parser_parse_error_handling(mock_config: MagicMock, mock_chat_openai: Tuple[MagicMock, MagicMock], capsys: Any) -> None:
+def test_job_parser_parse_error_handling(
+    mock_config: MagicMock, mock_chat_openai: Tuple[MagicMock, MagicMock], capsys: Any
+) -> None:
     _, mock_llm_instance = mock_chat_openai
 
     mock_structured_llm_invoke = MagicMock()

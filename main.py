@@ -29,7 +29,9 @@ def _prepare_cv_data(cv_file_path: str, factory_instance: Any) -> Any:
     return cv_manager
 
 
-def _initialize_state(cv_manager: Any, app_config: Any, user_prompt: str = config.initial_prompt) -> dict[str, Any]:
+def _initialize_state(
+    cv_manager: Any, app_config: Any, user_prompt: str = config.initial_prompt
+) -> dict[str, Any]:
     """Sets up the initial state for the LangGraph application."""
     logger.info("Fetching full resume text for initial context...")
     initial_context = cv_manager.get_full_resume_text()
